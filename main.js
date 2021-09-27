@@ -5,66 +5,83 @@ function preload()
     game.load.image('deathscreen', 'assets/deathscreen.png');
     game.load.image('winscreen', 'assets/winscreen.png');
     game.load.image('ground', 'assets/platform.png');
-    game.load.image('sky', 'assets/sky.png');
-    game.load.image('gem', 'assets/diamond.png');
-    game.load.spritesheet('wizard', 'assets/wizard.png', 16, 28);
+    game.load.image('tower', 'assets/utTower.png');
+    game.load.image('football', 'assets/football.png');
+    game.load.spritesheet('hookem', 'assets/fullruncycle.png', 64, 64);
 
 }
 
 var player;
 var platforms;
 var cursors;
-
-var gems;
+var bounds;
+var footballs;
 var score = 0;
 var scoreText;
 var gameover = false;
-var timeSinceLastIncrement = 0;
+var lastLeft = true;
 
 function create() 
 {
-
     game.physics.startSystem(Phaser.Physics.ARCADE);
-    game.add.sprite(0, 0, 'sky');
+    game.add.sprite(-110, 0, 'tower');
 
+    bounds = game.add.group();
+    bounds.enableBody = true;
+    var bound = bounds.create(0, game.world.height - 600, 'ground');
+    bound.scale.setTo(2,0.5)
+    bound.body.immovable = true;
+    
+    bound = bounds.create(0, game.world.height + 50, 'ground');
+    bound.scale.setTo(2,0.5)
+    bound.body.immovable = true;
+    
+    bound = bounds.create(0, game.world.height + 50, 'ground');
+    bound.scale.setTo(2,0.5)
+    bound.body.immovable = true;
+    //bound.angle += 1;
+    
+    
+    
     platforms = game.add.group();
     platforms.enableBody = true;
-    var ground = platforms.create(0, game.world.height - 64, 'ground');
+    var ground = platforms.create(0, game.world.height, 'ground');
     ground.scale.setTo(1.5, 4);
     ground.anchor.set(0.5);
     ground.x = game.world.centerX;
     ground.body.immovable = true;
     
-    var ledge = platforms.create(450, 350, 'ground');
+    
+    var ledge = platforms.create(450, 400, 'ground');
     ledge.body.immovable = true;
     ledge.scale.setTo(0.4, 0.5)
 
     
-    ledge = platforms.create(175, 350, 'ground');
+    ledge = platforms.create(175, 400, 'ground');
     ledge.body.immovable = true;
     ledge.scale.setTo(0.4, 0.5)
     
-    ledge = platforms.create(315, 250, 'ground');
+    ledge = platforms.create(315, 300, 'ground');
     ledge.body.immovable = true;
     ledge.scale.setTo(0.4, 0.5)
-
-    player = game.add.sprite(game.world.centerX, game.world.height - 200, 'wizard');
-    player.scale.setTo(2, 2);
+    
+    player = game.add.sprite(game.world.centerX, game.world.height - 200, 'hookem');
+    player.scale.setTo(1.25, 1.25);
     game.physics.arcade.enable(player);
-    player.body.gravity.y = 300;
-    //player.body.collideWorldBounds = true;
-    //player.setCollideWorldBounds(true);
-    //player.body.onWorldBounds = true;
-    //player.body.world.on('worldbounds',  )
+    player.body.gravity.y = 400;
+    player.body.collideWorldBounds = false;
+    
+    player.animations.add('right', [0, 1, 2, 3, 4], 10, true);
+    player.animations.add('left', [5, 6, 7, 8, 9], 10, true);
 
-
-    gems = game.add.group();
-    gems.enableBody = true;
+    footballs = game.add.group();
+    footballs.enableBody = true;
     for (var i = 0; i < 10; i++)
     {
-        var gem = gems.create(i * 80, -1000 + Math.random() * 1000, 'gem');
-        gem.body.gravity.y = 200;
-        gem.body.bounce.y = 0.4+ Math.random() * 0.4;
+        var football = footballs.create(i * 80, -1000 + Math.random() * 1000, 'football');
+        football.body.gravity.y = 200;
+        football.body.bounce.y = 0.4+ Math.random() * 0.4;
+        football.scale.setTo(2,2);
     }
     
     
@@ -81,21 +98,39 @@ function update()
     {
  
         var hitPlatform = game.physics.arcade.collide(player, platforms);
-        game.physics.arcade.collide(gems, platforms);
+        game.physics.arcade.collide(footballs, platforms);
 
-        game.physics.arcade.overlap(player, gems, collectGem, null, this);        
+        game.physics.arcade.overlap(player, footballs, collectFootball, null, this);        
+        game.physics.arcade.overlap(player, bounds, gotKilled, null);  
         
         player.body.velocity.x = 0;
         
 
         if (cursors.left.isDown)
         {
+            lastLeft = true;
             player.body.velocity.x = -350;
+            player.animations.play('left');
         }
         
         else if (cursors.right.isDown)
         {
+            lastLeft = false
             player.body.velocity.x = 350;
+            player.animations.play('right');
+        }
+        else
+        {
+            player.animations.stop();
+            if (lastLeft == true)
+            {
+                player.frame = 5;
+                
+            }
+            else
+            {
+                player.frame = 0;
+            }
         }
 
         if (cursors.up.isDown && player.body.touching.down && hitPlatform)
@@ -107,13 +142,14 @@ function update()
         {
             player.body.velocity.y = 350;
         }
+        
     }
 
 }
 
-function collectGem (player, gem) 
+function collectFootball (player, football) 
 {
-    gem.kill();
+    football.kill();
     score += 100;
     scoreText.text = 'Score: ' + score;
     if (score == 1000)
@@ -127,8 +163,9 @@ function collectGem (player, gem)
 function gotKilled () 
 {
     gameover = true;
-    this.add.image(0, 0, 'deathscreen');
-    game.add.text(16, 16, 'Score: ' + score, { fontSize: '32px', fill: '#ff0000' });
+    player.kill();
+    game.add.image(0, 0, 'deathscreen');
+    //game.add.text(16, 16, 'Score: ' + score, { fontSize: '32px', fill: '#ff0000' });
   
 }
 
