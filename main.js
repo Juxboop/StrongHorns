@@ -24,6 +24,7 @@ var lastLeft = true;
 var jumpCounter = 0;
 var isJumping;
 var hitboxes;
+var spacebar;
 
 function create() 
 {
@@ -84,13 +85,16 @@ function create()
     ledge.scale.setTo(0.4, 0.3)
     ledge.anchor.set(0.5);
     
+    //player
     player = game.add.sprite(game.world.centerX, game.world.height - 300, 'hookem');
     player.scale.setTo(1.25, 1.25);
     game.physics.arcade.enable(player);
     player.body.gravity.y = 2000;
     player.body.collideWorldBounds = false;
     
-    //game.physics.add.collide(player, platforms);
+    //player controls
+    spacebar = game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
+
 
     
     player.animations.add('right', [0, 1, 2, 3, 4], 10, true);
@@ -100,17 +104,27 @@ function create()
     footballs.enableBody = true;
     for (var i = 0; i < 10; i++)
     {
-        var football = footballs.create(i * 80, -1000 + Math.random() * 1000, 'football');
+        var football = footballs.create(300 + i * 80, -1000 + Math.random() * 1000, 'football');
         football.body.gravity.y = 200;
         football.body.bounce.y = 0.4+ Math.random() * 0.4;
         football.scale.setTo(2,2);
     }
     
-    //hitboxes
-    //hitboxes.game.add.group();
-    //hitboxes.enableBody = true;
-    //player.addChild(hitboxes);
     
+    //hitboxes
+    hitboxes = game.add.group();
+    hitboxes.enableBody = true;
+    player.addChild(hitboxes);
+    
+    var hitbox1 = hitboxes.create(100, 0, 'football');
+    hitbox1.scale.setTo(2,3)
+    hitbox1.name = 'attack1'
+    
+    var hitbox2 = hitboxes.create(-100, 0, 'football');
+    hitbox2.scale.setTo(2,3)
+    hitbox2.name = 'attack2'
+    
+    disableHitboxes()
     
     scoreText = game.add.text(16, 16, 'Score: ', { fontSize: '32px', fill: '#ff0000' });
     cursors = game.input.keyboard.createCursorKeys();
@@ -124,10 +138,12 @@ function update()
     {
         var hitStage = game.physics.arcade.collide(player, stages);
         var hitPlatform = game.physics.arcade.collide(player, platforms);
+        
         game.physics.arcade.collide(footballs, platforms);
 
         game.physics.arcade.overlap(player, footballs, collectFootball, null, this);        
         game.physics.arcade.overlap(player, bounds, gotKilled, null);  
+        game.physics.arcade.overlap(hitboxes, footballs, collectFootball, null, this);
         
         player.body.velocity.x = 0;
         
@@ -175,7 +191,6 @@ function update()
         if (cursors.up.isDown)
         {
             isJumping = true;
-            
         }
         
         if (cursors.up.isDown && jumpCounter <= 10)
@@ -199,6 +214,22 @@ function update()
         if (player.body.touching.down && (hitPlatform || hitStage))
         {
             isJumping = false;
+        }
+        
+        if (spacebar.isDown && cursors.right.isDown)
+        {
+            enableHitbox('attack1');
+            hitboxes.position.x = 100
+            this.time.events.add(1000, disableHitboxes);
+
+        }
+        
+        if (spacebar.isDown && cursors.left.isDown)
+        {
+            enableHitbox('attack2');
+            hitboxes.position.x = -100
+            this.time.events.add(1000, disableHitboxes);
+
         }
         
         if (hitPlatform && isJumping == true)
@@ -230,6 +261,23 @@ function gotKilled ()
     game.add.image(0, 0, 'deathscreen');
     //game.add.text(16, 16, 'Score: ' + score, { fontSize: '32px', fill: '#ff0000' });
   
+}
+
+function enableHitbox (hitboxName) 
+{     
+    for(var i = 0; i < hitboxes.children.length; i++)
+    {
+        if(hitboxes.children[i].name === hitboxName)
+        {
+            hitboxes.children[i].reset(0, 0);          
+        }  
+    }
+}
+
+function disableHitboxes ()
+{     
+    hitboxes.forEachExists(function(hitbox) {hitbox.kill();});
+
 }
 /*
 function upInputReleased ()
