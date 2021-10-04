@@ -5,7 +5,7 @@ function preload()
     game.load.image('deathscreen', 'assets/deathscreen.png');
     game.load.image('winscreen', 'assets/winscreen.png');
     game.load.image('ground', 'assets/platform.png');
-    game.load.image('tower', 'assets/utTower.jpg');
+    game.load.image('tower', 'assets/utTower1.png');
     game.load.image('football', 'assets/football.png');
     game.load.spritesheet('hookem', 'assets/fullruncycle.png', 64, 64);
 
@@ -22,11 +22,13 @@ var scoreText;
 var gameover = false;
 var lastLeft = true;
 var jumpCounter = 0;
+var isJumping;
+var hitboxes;
 
 function create() 
 {
     game.physics.startSystem(Phaser.Physics.ARCADE);
-    game.add.sprite(-110, 0, 'tower');
+    game.add.sprite(0, 0, 'tower');
 
     bounds = game.add.group();
     bounds.enableBody = true;
@@ -56,8 +58,8 @@ function create()
     stages = game.add.group();
     stages.enableBody = true;
     
-    var ground = stages.create(0, game.world.height - 150, 'ground');
-    ground.scale.setTo(2, 4);
+    var ground = stages.create(0, game.world.height - 160, 'ground');
+    ground.scale.setTo(2, 0.001);
     ground.anchor.set(0.5);
     ground.x = game.world.centerX;
     ground.body.immovable = true;
@@ -66,18 +68,18 @@ function create()
     platforms = game.add.group();
     platforms.enableBody = true;
     
-    var ledge = platforms.create(game.world.centerX - 200, 500, 'ground');
+    var ledge = platforms.create(game.world.centerX - 200, 550, 'ground');
     ledge.body.immovable = true;
     ledge.scale.setTo(0.4, 0.3)
     ledge.anchor.set(0.5);
 
     
-    ledge = platforms.create(game.world.centerX + 200, 500, 'ground');
+    ledge = platforms.create(game.world.centerX + 200, 550, 'ground');
     ledge.body.immovable = true;
     ledge.scale.setTo(0.4, 0.3)
     ledge.anchor.set(0.5);
     
-    ledge = platforms.create(game.world.centerX, 350, 'ground');
+    ledge = platforms.create(game.world.centerX, 400, 'ground');
     ledge.body.immovable = true;
     ledge.scale.setTo(0.4, 0.3)
     ledge.anchor.set(0.5);
@@ -85,7 +87,7 @@ function create()
     player = game.add.sprite(game.world.centerX, game.world.height - 300, 'hookem');
     player.scale.setTo(1.25, 1.25);
     game.physics.arcade.enable(player);
-    player.body.gravity.y = 1000;
+    player.body.gravity.y = 2000;
     player.body.collideWorldBounds = false;
     
     //game.physics.add.collide(player, platforms);
@@ -104,6 +106,10 @@ function create()
         football.scale.setTo(2,2);
     }
     
+    //hitboxes
+    //hitboxes.game.add.group();
+    //hitboxes.enableBody = true;
+    //player.addChild(hitboxes);
     
     
     scoreText = game.add.text(16, 16, 'Score: ', { fontSize: '32px', fill: '#ff0000' });
@@ -160,14 +166,21 @@ function update()
         
         if (cursors.up.isDown && player.body.touching.down && (hitPlatform || hitStage))
         {
-            player.body.velocity.y = -650;
+            player.body.velocity.y = -50;
             jumpCounter += 1;
             game.add.text(16, 16, 'Score: ' + jumpCounter, { fontSize: '32px', fill: '#ff0000' });
+            
+        }
+        
+        if (cursors.up.isDown)
+        {
+            isJumping = true;
+            
         }
         
         if (cursors.up.isDown && jumpCounter <= 10)
         {
-            player.body.velocity.y = -650;
+            player.body.velocity.y = -850;
             jumpCounter += 1;   
         }
         
@@ -180,9 +193,19 @@ function update()
         if (cursors.down.isDown && player.body.touching.down && hitPlatform)
         {
             player.position.y = player.position.y + 15;
-            player.body.velocity.y = -650;
+            //player.body.velocity.y = 650;
         }
         
+        if (player.body.touching.down && (hitPlatform || hitStage))
+        {
+            isJumping = false;
+        }
+        
+        if (hitPlatform && isJumping == true)
+        {
+            player.position.y = player.position.y - 5;
+            //player.body.velocity.y = -650;
+        }
     }
 
 }
