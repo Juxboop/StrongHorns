@@ -164,7 +164,8 @@ function update()
         
         //checks overlap of out of bounds and footballs
         game.physics.arcade.overlap(player, footballs, collectFootball, null, this);        
-        game.physics.arcade.overlap(player, bounds, gotKilled, null);  
+        game.physics.arcade.overlap(player, bounds, gotKilled, null);
+        game.physics.arcade.overlap(enemy, bounds, enemyKilled, null);  
         game.physics.arcade.overlap(hitboxes, footballs, collectFootball, null, this);
         
         //if no input, stay still
@@ -272,6 +273,26 @@ function update()
             player.position.y = player.position.y - 5;
             //player.body.velocity.y = -650;
         }
+
+        // see if enemy and player within 400px of each other
+        if (game.physics.arcade.distanceBetween(enemy, player) < 600) {
+
+            // if player to left of enemy AND enemy moving to right (or not moving)
+            if (player.x < enemy.x && enemy.body.velocity.x >= 0) {
+                // move enemy to left
+                enemy.body.velocity.x = -450;
+            }
+            // if player to right of enemy AND enemy moving to left (or not moving)
+            else if (player.x > enemy.x && enemy.body.velocity.x <= 0) {
+                // move enemy to right
+                enemy.body.velocity.x = 450;
+            }
+
+            else if (player.body.velocity.x == 0) {
+                enemy.body.velocity.x = 0
+            }
+
+        }
     }
 
 }
@@ -298,6 +319,17 @@ function gotKilled ()
     game.add.image(0, 0, 'deathscreen');
     //game.add.text(16, 16, 'Score: ' + score, { fontSize: '32px', fill: '#ff0000' });
   
+}
+
+
+// ends game and kills enemy
+function enemyKilled() {
+    enemy.kill()
+    enemy = game.add.sprite(game.world.centerX + 200, game.world.height - 300, 'wizard');
+    enemy.scale.setTo(3, 3);
+    game.physics.arcade.enable(enemy);
+    enemy.body.gravity.y = 2000;
+    enemy.body.collideWorldBounds = false;
 }
 
 // makes hitbox appear
@@ -329,4 +361,3 @@ function upInputReleased ()
     return released;
 }
 */
-
