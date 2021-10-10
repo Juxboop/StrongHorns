@@ -9,6 +9,8 @@ function preload()
     game.load.image('tower', 'assets/utTower1.png');
     game.load.image('football', 'assets/football.png');
     game.load.spritesheet('hookem', 'assets/fullruncycle.png', 64, 64);
+    game.load.spritesheet('jabs', 'assets/leftandrightjab.png', 64, 64);
+    game.load.spritesheet('jump', 'assets/leftandrightjump.png', 64, 64);
     game.load.image('wizard', 'assets/wizard.png');
 
 }
@@ -29,6 +31,10 @@ var jumpCounter = 0;
 var isJumping;
 var hitboxes;
 var spacebar;
+var hitStun = false;
+var knockback;
+var enemyDamage = 0;
+var enemyDamageText;
 
 function create() 
 {
@@ -114,17 +120,11 @@ function create()
     //player animations
     player.animations.add('right', [0, 1, 2, 3, 4], 10, true);
     player.animations.add('left', [5, 6, 7, 8, 9], 10, true);
+    player.animations.add('jableft', [0], 10, true);
+    player.animations.add('jabright', [1], 10, true);
 
     //placeholder footballs
-    footballs = game.add.group();
-    footballs.enableBody = true;
-    for (var i = 0; i < 10; i++)
-    {
-        var football = footballs.create(300 + i * 80, -1000 + Math.random() * 1000, 'football');
-        football.body.gravity.y = 200;
-        football.body.bounce.y = 0.4+ Math.random() * 0.4;
-        football.scale.setTo(2,2);
-    }
+
     
     
     //hitboxes
@@ -134,18 +134,18 @@ function create()
     
     //right hitbox
     var hitbox1 = hitboxes.create(100, 0, 'football');
-    hitbox1.scale.setTo(2,3)
+    hitbox1.scale.setTo(10,3)
     hitbox1.name = 'attack1'
     
     //left hitbox
     var hitbox2 = hitboxes.create(-100, 0, 'football');
-    hitbox2.scale.setTo(2,3)
+    hitbox2.scale.setTo(10,3)
     hitbox2.name = 'attack2'
     
     disableHitboxes()
     
     scoreText = game.add.text(16, 16, 'Score: ', { fontSize: '32px', fill: '#ff0000' });
-    
+    enemyDamageText = game.add.text(game.world.centerX, 850, enemyDamage + '%', { fontSize: '32px', fill: '#ff0000' });
     
 }
 
@@ -160,13 +160,10 @@ function update()
         
         var hitPlatform = game.physics.arcade.collide(player, platforms);
         
-        game.physics.arcade.collide(footballs, platforms);
         
         //checks overlap of out of bounds and footballs
-        game.physics.arcade.overlap(player, footballs, collectFootball, null, this);        
         game.physics.arcade.overlap(player, bounds, gotKilled, null);
         game.physics.arcade.overlap(enemy, bounds, enemyKilled, null);  
-        game.physics.arcade.overlap(hitboxes, footballs, collectFootball, null, this);
         game.physics.arcade.overlap(hitboxes, enemy, hitEnemy, null, this);
         
         //if no input, stay still
@@ -214,7 +211,6 @@ function update()
         {
             player.body.velocity.y = -50;
             jumpCounter += 1;
-            game.add.text(16, 16, 'Score: ' + jumpCounter, { fontSize: '32px', fill: '#ff0000' });
             
         }
         
@@ -227,7 +223,7 @@ function update()
         //double jump
         if (cursors.up.isDown && jumpCounter <= 10)
         {
-            player.body.velocity.y = -850;
+            jump();
             jumpCounter += 1;   
         }
         
@@ -241,7 +237,6 @@ function update()
         if (cursors.down.isDown && player.body.touching.down && hitPlatform)
         {
             player.position.y = player.position.y + 15;
-            //player.body.velocity.y = 650;
         }
         
         //checks if player is not jumping
@@ -253,8 +248,9 @@ function update()
         //right attack
         if (spacebar.isDown && cursors.right.isDown)
         {
+            player.animations.play('jabright');
             enableHitbox('attack1');
-            hitboxes.position.x = 100
+            hitboxes.position.x = 50;
             this.time.events.add(1000, disableHitboxes);
 
         }
@@ -262,8 +258,9 @@ function update()
         //left attack
         if (spacebar.isDown && cursors.left.isDown)
         {
+            player.animations.play('jableft');
             enableHitbox('attack2');
-            hitboxes.position.x = -100
+            hitboxes.position.x = -100;
             this.time.events.add(1000, disableHitboxes);
 
         }
@@ -274,23 +271,28 @@ function update()
             player.position.y = player.position.y - 5;
             //player.body.velocity.y = -650;
         }
+        
+        if (hitStun == false)
+        {
+            
+            // see if enemy and player within 400px of each other
+            if (game.physics.arcade.distanceBetween(enemy, player) < 600) 
+            {
 
-        // see if enemy and player within 400px of each other
-        if (game.physics.arcade.distanceBetween(enemy, player) < 600) {
+                    // if player to left of enemy AND enemy moving to right (or not moving)
+                    if (player.x < enemy.x - 5 && enemy.body.velocity.x >= 0) {
+                        // move enemy to left
+                        enemy.body.velocity.x = -250;
+                    }
+                    // if player to right of enemy AND enemy moving to left (or not moving)
+                    else if (player.x > enemy.x + 5 && enemy.body.velocity.x <= 0) {
+                        // move enemy to right
+                        enemy.body.velocity.x = 250;
+                    }
 
-            // if player to left of enemy AND enemy moving to right (or not moving)
-            if (player.x < enemy.x - 5 && enemy.body.velocity.x >= 0) {
-                // move enemy to left
-                enemy.body.velocity.x = -250;
-            }
-            // if player to right of enemy AND enemy moving to left (or not moving)
-            else if (player.x > enemy.x + 5 && enemy.body.velocity.x <= 0) {
-                // move enemy to right
-                enemy.body.velocity.x = 250;
-            }
-
-            else if (player.body.velocity.x == 0) {
-                enemy.body.velocity.x = 0
+                    else if (player.body.velocity.x == 0) {
+                        enemy.body.velocity.x = 0
+                    }
             }
 
         }
@@ -298,19 +300,6 @@ function update()
 
 }
 
-// collect football 
-function collectFootball (player, football) 
-{
-    football.kill();
-    score += 100;
-    scoreText.text = 'Score: ' + score;
-    if (score == 1000)
-    {
-        gameover = true;
-        this.add.image(0, 0, 'winscreen');
-        game.add.text(16, 16, 'Score: ' + score, { fontSize: '32px', fill: '#ff0000' });
-    }
-}
 
 // ends game and kills player
 function gotKilled () 
@@ -319,19 +308,23 @@ function gotKilled ()
     player.kill();
     game.add.image(0, 0, 'deathscreen');
     //game.add.text(16, 16, 'Score: ' + score, { fontSize: '32px', fill: '#ff0000' });
-  
+    
 }
 
 
 // ends game and kills enemy
 function enemyKilled() 
 {
-    enemy.kill()
+    enemyDamage = 0;
+    enemyDamageText.text = enemyDamage + '%';
+    enemy.kill();
     enemy = game.add.sprite(game.world.centerX, game.world.height - 600, 'wizard');
     enemy.scale.setTo(3, 3);
     game.physics.arcade.enable(enemy);
     enemy.body.gravity.y = 2000;
     enemy.body.collideWorldBounds = false;
+    score += 1;
+    scoreText.text = 'Score: ' + score;
 }
 
 // makes hitbox appear
@@ -353,8 +346,34 @@ function disableHitboxes ()
 
 }
 
+// what happens when enemy is hit
 function hitEnemy ()
 {
-    enemy.body.velocity.y = -1500;
-    enemy.body.velocity.x = -1500;
+    enemyDamage += 5;
+    enemyDamageText.text = enemyDamage + '%';
+    hitStun = true
+    
+    //calculates knockback
+    knockback = (enemyDamage / 100) * -1000 
+    enemy.body.velocity.y = knockback;
+    enemy.body.velocity.x = knockback;
+    this.time.events.add(400, disableHitStun);
+}
+
+// jump
+function jump ()
+{
+    
+    player.body.velocity.y = -850;
+    
+}
+
+function enableHitStun ()
+{
+    hitStun = true;
+}
+
+function disableHitStun ()
+{
+    hitStun = false;
 }
