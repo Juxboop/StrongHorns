@@ -13,6 +13,7 @@ function preload()
     game.load.spritesheet('jump', 'assets/leftandrightjump.png', 64, 64);
     game.load.image('wizard', 'assets/wizard.png');
     game.load.image('confetti', 'assets/confetti.png');
+    game.load.image('star', 'assets/star.png');
     //HELLO
 }
 
@@ -41,6 +42,7 @@ var knockback;
 var enemyDamage = 0;
 var enemyDamageText;
 var emitter;
+var emitter2;
 var timeLimit = 20;
 var timeOver = false;
 var timeText;
@@ -164,13 +166,17 @@ function create()
         
     emitter = game.add.emitter(game.world.centerX, 500, 200);
     emitter.scale.setTo(1, 1)
-
     emitter.makeParticles('wizard');
-
     emitter.setRotation(0, 0);
     emitter.setAlpha(0.3, 0.8);
     emitter.gravity = 0;
     
+    emitter2 = game.add.emitter(game.world.centerX, 500, 200);
+    emitter2.scale.setTo(1, 1)
+    emitter2.makeParticles('star');
+    emitter2.setRotation(0, 0);
+    emitter2.setAlpha(0.3, 0.8);
+    emitter2.gravity = 0;
     
     scoreText = game.add.text(16, 16, 'Score: ', { fontSize: '64px', fill: '#ff0000' });
     enemyDamageText = game.add.text(game.world.centerX, 850, enemyDamage + '%', { fontSize: '48px', fill: '#ff0000' });
@@ -455,6 +461,7 @@ function disableHitboxes ()
 // what happens when enemy is hit
 function hitBox1Enemy ()
 {
+    particleBurstHit();
     enemyDamage += 10;
     enemyDamageText.text = enemyDamage + '%';
     hitStun = true
@@ -468,6 +475,7 @@ function hitBox1Enemy ()
 
 function hitBox2Enemy ()
 {
+    particleBurstHit();
     enemyDamage += 10;
     enemyDamageText.text = enemyDamage + '%';
     hitStun = true
@@ -481,6 +489,7 @@ function hitBox2Enemy ()
 
 function hitBox3Enemy ()
 {
+    particleBurstHit();
     enemyDamage += 10;
     enemyDamageText.text = enemyDamage + '%';
     hitStun = true
@@ -493,6 +502,7 @@ function hitBox3Enemy ()
 
 function hitBox4Enemy ()
 {
+    particleBurstHit();
     enemyDamage += 10;
     enemyDamageText.text = enemyDamage + '%';
     hitStun = true
@@ -535,6 +545,14 @@ function particleBurst()
     emitter.y = enemy.body.y;
     
     emitter.start(true, 3000, null, 50);
+}
+
+function particleBurstHit()
+{
+    emitter2.x = enemy.body.x;
+    emitter2.y = enemy.body.y;
+    
+    emitter2.start(true, 500, null, 20);
 }
 
 function displayTimeRemaining() 
