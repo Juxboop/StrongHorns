@@ -29,6 +29,7 @@ var gameover = false;
 var lastLeft = true;
 var jumpCounter = 0;
 var isJumping;
+var canPass;
 var hitboxes;
 var hitbox1;
 var hitbox2;
@@ -40,7 +41,7 @@ var knockback;
 var enemyDamage = 0;
 var enemyDamageText;
 var emitter;
-var timeLimit = 500;
+var timeLimit = 20;
 var timeOver = false;
 var timeText;
 var gameOverText;
@@ -237,32 +238,56 @@ function update()
                 player.frame = 0;
             }
         }
-        
+
+        /*cursors.up.onDown.add(jumping);
+            if(player.body.touching.down){
+                jumpCounter = 0;
+            }
+
+            function isJumping(){
+                if(jumpCounter < 1 && player.body.touching.down){
+                    singleJump();
+
+                    if(player.body.touching.down){
+                        jumpCounter = 0;
+                    }
+                }
+
+                if(jumpCounter < 2 && !player.body.touching.down){
+                    doubleJump();
+                }
+            }
+
+            function singleJump(){
+                player.body.velocity.y = -50;
+                jumpCounter++;
+            }
+
+            function doubleJump(){
+                player.body.velocity.y = -100;
+                jumpCounter++;
+            }
+        */
+
         //resets jump counter if touching platform or stage
-        if (player.body.touching.down && (hitPlatform || hitStage) && jumpCounter > 1)
+        if (player.body.touching.down && (hitPlatform || hitStage))
         {
-            jumpCounter = 0;
+            canPass = false;
+            jumpCounter = 2;
+            isJumping = false;
         }
         
         //jumping from platform or stage
-        if (cursors.up.isDown && player.body.touching.down && (hitPlatform || hitStage))
-        {
-            player.body.velocity.y = -50;
-            jumpCounter += 1;
-            
-        }
-        
-        //checks if player jumped
-        if (cursors.up.isDown)
-        {
-            isJumping = true;
-        }
-        
-        //double jump
-        if (cursors.up.isDown && jumpCounter <= 10)
+        if (upInputIsActive(5) && jumpCounter > 0)
         {
             jump(player);
-            jumpCounter += 1;   
+            canPass = true;
+            isJumping = true;
+        }
+
+        if (isJumping && upInputReleased()){
+            jumpCounter--;
+            isJumping = false;
         }
         
         //fast falling while in the air
@@ -276,13 +301,7 @@ function update()
         {
             player.position.y = player.position.y + 15;
         }
-        
-        //checks if player is not jumping
-        if (player.body.touching.down && (hitPlatform || hitStage))
-        {
-            isJumping = false;
-        }
-        
+
         //right attack
         if (spacebar.isDown && cursors.right.isDown)
         {
@@ -326,9 +345,10 @@ function update()
         }
         
         //jump through platforms.
-        if (hitPlatform && isJumping == true)
+        if (hitPlatform && !(player.body.touching.down) && canPass)
         {
             player.position.y = player.position.y - 5;
+            player.body.velocity.y = -450;
             //player.body.velocity.y = -650;
         }
         
@@ -489,6 +509,14 @@ function jump (jumper)
     
     jumper.body.velocity.y = -850;
     
+}
+
+function upInputIsActive(duration) {
+    return game.input.keyboard.downDuration(Phaser.Keyboard.UP, duration);
+}
+
+function upInputReleased() {
+    return game.input.keyboard.upDuration(Phaser.Keyboard.UP);
 }
 
 function enableHitStun ()
