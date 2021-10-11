@@ -13,7 +13,7 @@ function preload()
     game.load.spritesheet('jump', 'assets/leftandrightjump.png', 64, 64);
     game.load.image('wizard', 'assets/wizard.png');
     game.load.image('confetti', 'assets/confetti.png');
-
+    //HELLO
 }
 
 // defined variables
