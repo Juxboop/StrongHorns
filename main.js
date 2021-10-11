@@ -347,8 +347,8 @@ function update()
         //jump through platforms.
         if (hitPlatform && !(player.body.touching.down) && canPass)
         {
-            player.position.y = player.position.y - 5;
-            player.body.velocity.y = -450;
+            player.position.y = player.position.y - 4.1;
+            player.body.velocity.y = -300;
             //player.body.velocity.y = -650;
         }
         
