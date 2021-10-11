@@ -40,7 +40,7 @@ var knockback;
 var enemyDamage = 0;
 var enemyDamageText;
 var emitter;
-var timeLimit = 5;
+var timeLimit = 500;
 var timeOver = false;
 var timeText;
 var gameOverText;
@@ -193,10 +193,7 @@ function update()
         game.physics.arcade.overlap(player, bounds, gotKilled, null);
         game.physics.arcade.overlap(enemy, bounds, enemyKilled, null);  
         
-        game.physics.arcade.overlap(hitbox1, enemy, hitBox1Enemy, null, this);
-        game.physics.arcade.overlap(hitbox2, enemy, hitBox2Enemy, null, this);
-        game.physics.arcade.overlap(hitbox3, enemy, hitBox3Enemy, null, this);
-        game.physics.arcade.overlap(hitbox4, enemy, hitBox4Enemy, null, this);
+        
         //if no input, stay still
         player.body.velocity.x = 0;
         
@@ -338,7 +335,6 @@ function update()
         if (hitStun == false)
         {
             
-            
             // see if enemy and player within 400px of each other
             if (game.physics.arcade.distanceBetween(enemy, player) < 600) 
             {
@@ -368,9 +364,13 @@ function update()
                     else if (player.body.velocity.x == 0) {
                         enemy.body.velocity.x = 0
                     }
-                    
                 
             }
+            
+            game.physics.arcade.overlap(hitbox1, enemy, hitBox1Enemy, null, this);
+            game.physics.arcade.overlap(hitbox2, enemy, hitBox2Enemy, null, this);
+            game.physics.arcade.overlap(hitbox3, enemy, hitBox3Enemy, null, this);
+            game.physics.arcade.overlap(hitbox4, enemy, hitBox4Enemy, null, this);
 
         }
     }
@@ -381,7 +381,7 @@ function update()
 function endGame ()
 {
     gameover = true;
-    player.kill();
+    //player.kill();
     timeText = game.add.text(game.world.centerX, game.world.centerY, 'GAME OVER', { fontSize: '100px', fill: '#000000' });
 
     
