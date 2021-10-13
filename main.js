@@ -18,6 +18,7 @@ function preload()
 }
 
 // defined variables
+var deathscreen
 var player;
 var enemy;
 var platforms;
@@ -37,6 +38,8 @@ var hitbox2;
 var hitbox3;
 var hitbox4;
 var spacebar;
+var keyR;
+var keyE;
 var hitStun = false;
 var knockback;
 var enemyDamage = 0;
@@ -46,7 +49,10 @@ var emitter2;
 var timeLimit = 20;
 var timeOver = false;
 var timeText;
+var time;
+var timeLeft;
 var gameOverText;
+
 
 function create() 
 {
@@ -127,6 +133,8 @@ function create()
     //player keyboard controls
     cursors = game.input.keyboard.createCursorKeys();
     spacebar = game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
+    keyR = game.input.keyboard.addKey(Phaser.Keyboard.R);
+    keyE = game.input.keyboard.addKey(Phaser.Keyboard.E);
 
 
     //player animations
@@ -182,10 +190,20 @@ function create()
     enemyDamageText = game.add.text(game.world.centerX, 850, enemyDamage + '%', { fontSize: '48px', fill: '#ff0000' });
     timeText = game.add.text(1100, 16, 'Time Left: ', { fontSize: '64px', fill: '#ff0000' });
     
+    
 }
 
 function update() 
 {
+    if (keyR.isDown)
+        {
+            restartGame();
+        }
+    
+    if (keyE.isDown)
+        {
+            endGame();
+        }
     
     if (gameover == false)
     {
@@ -200,9 +218,9 @@ function update()
         game.physics.arcade.overlap(player, bounds, gotKilled, null);
         game.physics.arcade.overlap(enemy, bounds, enemyKilled, null);  
         
-        
         //if no input, stay still
         player.body.velocity.x = 0;
+        
         
         if (timeOver == false)
         {
@@ -403,12 +421,23 @@ function update()
 
 }
 
+function restartGame ()
+{
+    game.time.reset();
+    game.state.restart();
+    score = 0;
+    time = 0;
+    timeLeft = 0;
+    //deathscreen.kill();
+    //gameOverText.kill();
+    //enemyDamage = 0;
+    gameover = false;
+}
 
 function endGame ()
 {
-    gameover = true;
-    //player.kill();
-    timeText = game.add.text(game.world.centerX, game.world.centerY, 'GAME OVER', { fontSize: '100px', fill: '#000000' });
+    enemy.kill();
+    gameOverText = game.add.text(game.world.centerX, game.world.centerY, 'GAME OVER', { fontSize: '100px', fill: '#000000' });
 
     
 }
@@ -416,8 +445,7 @@ function endGame ()
 function gotKilled () 
 {
     gameover = true;
-    player.kill();
-    game.add.image(0, 0, 'deathscreen');
+    deathscreen = game.add.image(0, 0, 'deathscreen');
     //game.add.text(16, 16, 'Score: ' + score, { fontSize: '32px', fill: '#ff0000' });
      
 }
@@ -557,8 +585,8 @@ function particleBurstHit()
 
 function displayTimeRemaining() 
 {
-    var time = Math.floor(game.time.totalElapsedSeconds() );
-    var timeLeft = timeLimit - time;
+    time = Math.floor(game.time.totalElapsedSeconds() );
+    timeLeft = timeLimit - time;
 
     // detect when countdown is over
     if (timeLeft <= 0) {
