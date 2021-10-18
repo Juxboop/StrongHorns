@@ -3,15 +3,16 @@ var game = new Phaser.Game(1600, 900, Phaser.AUTO, '', { preload: preload, creat
 // preload assets
 function preload() 
 {
-    game.load.image('deathscreen', 'assets/deathscreen.png');
+    game.load.image('deathscreen', 'assets/endscr.png');
     game.load.image('winscreen', 'assets/winscreen.png');
     game.load.image('ground', 'assets/platform.png');
     game.load.image('tower', 'assets/utTower2.png');
     game.load.image('football', 'assets/football.png');
     game.load.spritesheet('hookem', 'assets/hookemRUNJABJUMP.png', 64, 64);
-    game.load.image('sarge', 'assets/olsarge.png');
+    game.load.spritesheet('sarge', 'assets/olsargeleftandright.png', 64, 64);
     game.load.image('confetti', 'assets/confetti.png');
     game.load.image('star', 'assets/star.png');
+    game.load.image('titlescreen', 'assets/Strong_horns_title.png')
 }
 
 // defined variables
@@ -24,7 +25,7 @@ var cursors;
 var bounds;
 var score = 0;
 var scoreText;
-var gameover = false;
+var gameover = true;
 var lastLeft = true;
 var jumpCounter = 0;
 var isJumping;
@@ -37,6 +38,8 @@ var hitbox4;
 var spacebar;
 var keyR;
 var keyE;
+var keyU;
+var keyBackSpace;
 var enemyHitStun = false;
 var playerHitStun = false;
 var knockback;
@@ -55,6 +58,7 @@ var timeLeft;
 var gameOverText;
 var leftStoredVelocity = 0;
 var rightStoredVelocity = 0;
+var titleScreen;
 
 
 function create() 
@@ -138,6 +142,8 @@ function create()
     spacebar = game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
     keyR = game.input.keyboard.addKey(Phaser.Keyboard.R);
     keyE = game.input.keyboard.addKey(Phaser.Keyboard.E);
+    keyU = game.input.keyboard.addKey(Phaser.Keyboard.U)
+    keyBackSpace = game.input.keyboard.addKey(Phaser.Keyboard.BACKSPACE)
 
 
     //player animations
@@ -193,11 +199,29 @@ function create()
     
     // User Interface
     scoreText = game.add.text(16, 16, 'Score: ', { fontSize: '64px', fill: '#ff0000' });
-    enemyDamageText = game.add.text(game.world.centerX + 100, 850, enemyDamage + '%', { fontSize: '48px', fill: '#ff0000' });
-    playerDamageText = game.add.text(game.world.centerX - 150, 850, playerDamage + '%', { fontSize: '48px', fill: '#ff0000' });
-    timeText = game.add.text(1100, 16, 'Time Left: ', { fontSize: '64px', fill: '#ff0000' });
+    enemyDamageText = game.add.text(game.world.centerX + 100, 850, enemyDamage + '%', { fontSize: '48px', fill: '#FFFFFF' });
+    playerDamageText = game.add.text(game.world.centerX - 150, 850, playerDamage + '%', { fontSize: '48px', fill: '#FFFFFF' });
+    timeText = game.add.text(1100, 16, 'Time Left: ', { fontSize: '64px', fill: '#FFFFFF' });
+
+
+    scoreText.stroke = '#000000';
+    scoreText.strokeThickness = 6;
+    scoreText.fill = '#FFFFFF';
+
+    enemyDamageText.stroke = '#000000';
+    enemyDamageText.strokeThickness = 6;
+    enemyDamageText.fill = '#FFFFFF';
+
+    playerDamageText.stroke = '#000000';
+    playerDamageText.strokeThickness = 6;
+    playerDamageText.fill = '#FFFFFF';
+
+    timeText.stroke = '#000000';
+    timeText.strokeThickness = 6;
+    timeText.fill = '#FFFFFF';
     
     
+    displayTitleScreen();
 }
 
 function update() 
@@ -207,23 +231,30 @@ function update()
             restartGame();
         }
     
-    if (keyE.isDown)
+    if (keyBackSpace.isDown)
         {
             endGame();
         }
     
     
-        
-        //collision
-        var hitStage = game.physics.arcade.collide(player, stages);
-        var hitStage1 = game.physics.arcade.collide(enemy, stages);
-        
-        var hitPlatform = game.physics.arcade.collide(player, platforms);
-        
-        
-        //checks overlap of out of bounds
-        game.physics.arcade.overlap(player, bounds, gotKilled, null);
-        game.physics.arcade.overlap(enemy, bounds, enemyKilled, null);  
+    
+    if (keyU.isDown)
+        {
+            hideTitleScreen();
+        }
+
+
+    //collision
+    var hitStage = game.physics.arcade.collide(player, stages);
+    var hitStage1 = game.physics.arcade.collide(enemy, stages);
+    
+    var hitPlatform = game.physics.arcade.collide(player, platforms);
+    
+    
+    //checks overlap of out of bounds
+    game.physics.arcade.overlap(player, bounds, gotKilled, null);
+    game.physics.arcade.overlap(enemy, bounds, enemyKilled, null);  
+
     if (gameover == false)
     {
         
@@ -406,11 +437,13 @@ function update()
                     if (player.x < enemy.x - 5 && enemy.body.velocity.x >= 0) {
                         // move enemy to left
                         enemy.body.velocity.x = -250;
+                        enemy.frame = 1;
                     }
                     // if player to right of enemy AND enemy moving to left (or not moving)
                     else if (player.x > enemy.x + 5 && enemy.body.velocity.x <= 0) {
                         // move enemy to right
                         enemy.body.velocity.x = 250;
+                        enemy.frame = 0;
                     }
                 
                     /*
@@ -444,7 +477,7 @@ function update()
 function restartGame ()
 {
     playerHitStun = false;
-    gameover = false;
+    // gameover = true;
     timeOver = false;
     game.time.reset();
     game.state.restart();
@@ -461,7 +494,9 @@ function restartGame ()
 function endGame ()
 {
     enemy.kill()
-    gameOverText = game.add.text(game.world.centerX, game.world.centerY, 'GAME OVER', { fontSize: '100px', fill: '#000000' });
+    // gameOverText = game.add.text(game.world.centerX, game.world.centerY, 'GAME OVER', { fontSize: '100px', fill: '#000000' });
+    deathscreen = game.add.image(0, 0, 'deathscreen');
+    deathscreen.scale.setTo(2, 2);
     gameover = true;
     
     
@@ -472,6 +507,7 @@ function gotKilled ()
 {
     gameover = true;
     deathscreen = game.add.image(0, 0, 'deathscreen');
+    deathscreen.scale.setTo(2, 2);
     //game.add.text(16, 16, 'Score: ' + score, { fontSize: '32px', fill: '#ff0000' });
      
 }
@@ -658,4 +694,18 @@ function displayTimeRemaining()
     }
     
     timeText.text = 'Time Left ' + min + ':' + sec;
+}
+
+function displayTitleScreen()
+{
+    gameover = true;
+    titleScreen = game.add.image(0, 0, 'titlescreen');
+}
+
+function hideTitleScreen() 
+{
+
+    titleScreen.kill();
+    gameover = false;
+    game.time.reset();
 }
