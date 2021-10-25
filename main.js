@@ -13,6 +13,7 @@ function preload()
     game.load.image('confetti', 'assets/confetti.png');
     game.load.image('star', 'assets/star.png');
     game.load.image('titlescreen', 'assets/Strong_horns_title.png')
+    game.load.image('tutorial', 'assets/Strong_horns_tutorial.png')
 }
 
 // defined variables
