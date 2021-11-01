@@ -13,11 +13,20 @@ function preload()
     game.load.image('confetti', 'assets/confetti.png');
     game.load.image('star', 'assets/star.png');
     game.load.image('titlescreen', 'assets/Strong_horns_title.png')
+    game.load.image('endscreen', 'assets/goodenough.png')
     game.load.image('tutorial', 'assets/Strong_horns_tutorial.png')
+    game.load.audio('bgm', 'assets/bensound-extremeaction.mp3')
+    game.load.audio('punchsound', 'assets/punch_sound.wav')
+    
 }
 
 // defined variables
-var deathscreen
+var music;
+var punchsound;
+var deathscreen;
+var endscreen;
+var tutorialScreen;
+var canTutorial;
 var player;
 var enemy;
 var platforms;
@@ -40,6 +49,7 @@ var spacebar;
 var keyR;
 var keyE;
 var keyU;
+var keyT;
 var keyBackSpace;
 var enemyHitStun = false;
 var playerHitStun = false;
@@ -144,6 +154,7 @@ function create()
     keyR = game.input.keyboard.addKey(Phaser.Keyboard.R);
     keyE = game.input.keyboard.addKey(Phaser.Keyboard.E);
     keyU = game.input.keyboard.addKey(Phaser.Keyboard.U)
+    keyT = game.input.keyboard.addKey(Phaser.Keyboard.T)
     keyBackSpace = game.input.keyboard.addKey(Phaser.Keyboard.BACKSPACE)
 
 
@@ -155,8 +166,13 @@ function create()
     player.animations.add('jumpleft', [12, 13, 14], 3, true);
     player.animations.add('jumpright', [15, 16, 17], 3, true);
 
-    //placeholder footballs
-
+    //sounds
+    
+    music = game.add.audio('bgm');
+    music.volume = 0.05;
+    
+    punchsound = game.add.audio('punchsound');
+     
     
     
     //hitboxes
@@ -200,8 +216,8 @@ function create()
     
     // User Interface
     scoreText = game.add.text(16, 16, 'Score: ', { fontSize: '64px', fill: '#ff0000' });
-    enemyDamageText = game.add.text(game.world.centerX + 100, 850, enemyDamage + '%', { fontSize: '48px', fill: '#FFFFFF' });
-    playerDamageText = game.add.text(game.world.centerX - 150, 850, playerDamage + '%', { fontSize: '48px', fill: '#FFFFFF' });
+    enemyDamageText = game.add.text(game.world.centerX + 100, 830, enemyDamage + '%', { fontSize: '48px', fill: '#FFFFFF' });
+    playerDamageText = game.add.text(game.world.centerX - 150, 830, playerDamage + '%', { fontSize: '48px', fill: '#FFFFFF' });
     timeText = game.add.text(1100, 16, 'Time Left: ', { fontSize: '64px', fill: '#FFFFFF' });
 
 
@@ -228,21 +244,25 @@ function create()
 function update() 
 {
     if (keyR.isDown)
-        {
-            restartGame();
-        }
+    {
+        restartGame();
+    }
     
     if (keyBackSpace.isDown)
-        {
-            endGame();
-        }
-    
-    
+    {
+        restartGame();
+    }
     
     if (keyU.isDown)
-        {
-            hideTitleScreen();
-        }
+    {
+        hideTitleScreen();
+        music.play();
+    }
+    
+    if (keyT.isDown && canTutorial)
+    {
+        toggleTutorial();
+    }
 
 
     //collision
@@ -409,8 +429,18 @@ function update()
             if (spacebar.isDown && cursors.down.isDown)
             {
                 enableHitbox('attack4');
-                hitboxes.position.y = 50;
-                hitboxes.position.x = 0;
+                
+                if (lastLeft)
+                {
+                    hitboxes.position.y = 50;
+                    hitboxes.position.x = -100;
+                }
+                else
+                {
+                    hitboxes.position.y = 50;
+                    hitboxes.position.x = 0;
+                }
+                
                 this.time.events.add(1000, disableHitboxes);
 
             }
@@ -488,17 +518,20 @@ function restartGame ()
     //gameOverText.kill();
     enemyDamage = 0;
     playerDamage = 0;
+    music.stop();
     
     
 }
 
 function endGame ()
 {
-    enemy.kill()
-    // gameOverText = game.add.text(game.world.centerX, game.world.centerY, 'GAME OVER', { fontSize: '100px', fill: '#000000' });
-    deathscreen = game.add.image(0, 0, 'deathscreen');
-    deathscreen.scale.setTo(2, 2);
     gameover = true;
+    enemy.kill();
+    player.kill();
+    // gameOverText = game.add.text(game.world.centerX, game.world.centerY, 'GAME OVER', { fontSize: '100px', fill: '#000000' });
+    endscreen = game.add.image(0, 0, 'endscreen');
+    //endscreen.scale.setTo(2, 2);
+    
     
     
 }
@@ -579,6 +612,7 @@ function disableHitboxes ()
 // what happens when enemy is hit
 function hitBox1Enemy ()
 {
+    punchsound.play();
     particleBurstHit();
     enemyDamage += 10;
     enemyDamageText.text = enemyDamage + '%';
@@ -593,6 +627,7 @@ function hitBox1Enemy ()
 
 function hitBox2Enemy ()
 {
+    punchsound.play();
     particleBurstHit();
     enemyDamage += 10;
     enemyDamageText.text = enemyDamage + '%';
@@ -607,6 +642,7 @@ function hitBox2Enemy ()
 
 function hitBox3Enemy ()
 {
+    punchsound.play();
     particleBurstHit();
     enemyDamage += 10;
     enemyDamageText.text = enemyDamage + '%';
@@ -620,6 +656,7 @@ function hitBox3Enemy ()
 
 function hitBox4Enemy ()
 {
+    punchsound.play();
     particleBurstHit();
     enemyDamage += 10;
     enemyDamageText.text = enemyDamage + '%';
@@ -701,6 +738,7 @@ function displayTitleScreen()
 {
     gameover = true;
     titleScreen = game.add.image(0, 0, 'titlescreen');
+    canTutorial = true;
 }
 
 function hideTitleScreen() 
@@ -708,5 +746,12 @@ function hideTitleScreen()
 
     titleScreen.kill();
     gameover = false;
+    canTutorial = false;
     game.time.reset();
+}
+
+function toggleTutorial() 
+{
+        tutorialScreen = game.add.image(0, 0, 'tutorial');
+
 }
