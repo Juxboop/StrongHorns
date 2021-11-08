@@ -12,17 +12,26 @@ function preload()
     game.load.spritesheet('sarge', 'assets/olsargeleftandright.png', 64, 64);
     game.load.image('confetti', 'assets/confetti.png');
     game.load.image('star', 'assets/star.png');
+    game.load.image('redstar', 'assets/redstar.png');
+    game.load.image('goal', 'assets/fieldgoaltemp.png');
+    
     game.load.image('titlescreen', 'assets/Strong_horns_title.png')
     game.load.image('endscreen', 'assets/goodenough.png')
     game.load.image('tutorial', 'assets/Strong_horns_tutorial.png')
+    
     game.load.audio('bgm', 'assets/bensound-extremeaction.mp3')
     game.load.audio('punchsound', 'assets/punch_sound.wav')
-    
+    game.load.audio('smashsound', 'assets/smash_sound.mp3')
+    game.load.audio('awwsound', 'assets/aww_sound.mp3')
+    game.load.audio('KOsound', 'assets/KOsound.mp3')
 }
 
 // defined variables
 var music;
 var punchsound;
+var smashsound;
+var awwsound;
+var KOsound;
 var deathscreen;
 var endscreen;
 var tutorialScreen;
@@ -31,6 +40,7 @@ var player;
 var enemy;
 var platforms;
 var stages;
+var fieldgoals;
 var cursors;
 var bounds;
 var score = 0;
@@ -54,6 +64,7 @@ var keyBackSpace;
 var enemyHitStun = false;
 var playerHitStun = false;
 var knockback;
+var isAttacking = false;
 var playerKnockback;
 var enemyDamage = 0;
 var enemyDamageText;
@@ -61,12 +72,14 @@ var playerDamage = 0;
 var playerDamageText;
 var emitter;
 var emitter2;
-var timeLimit = 20;
+var emitter3;
+var timeLimit = 60;
 var timeOver = false;
 var timeText;
 var time;
 var timeLeft;
 var gameOverText;
+var countdownText;
 var leftStoredVelocity = 0;
 var rightStoredVelocity = 0;
 var titleScreen;
@@ -128,11 +141,20 @@ function create()
     ledge.scale.setTo(0.4, 0.3)
     ledge.anchor.set(0.5);
     
-    //create top platform
+    //create top platformu
     ledge = platforms.create(game.world.centerX, 400, 'ground');
     ledge.body.immovable = true;
     ledge.scale.setTo(0.4, 0.3)
     ledge.anchor.set(0.5);
+    
+    //create fieldgoals
+//    fieldgoals = game.add.group();
+//    fieldgoals.enableBody = true;
+//    
+//    var fieldgoal = fieldgoals.create(100, game.world.centerY - 300, 'goal');
+//    fieldgoal.body.immovable = true;
+//    fieldgoal.scale.setTo(0.5, 0.5);
+    
     
     //create player
     player = game.add.sprite(game.world.centerX, game.world.height - 300, 'hookem');
@@ -172,8 +194,10 @@ function create()
     music.volume = 0.05;
     
     punchsound = game.add.audio('punchsound');
-     
-    
+    smashsound = game.add.audio('smashsound'); 
+    awwsound = game.add.audio('awwsound');
+    KOsound = game.add.audio('KOsound');
+    KOsound.volume = 0.2;
     
     //hitboxes
     hitboxes = game.add.group();
@@ -214,11 +238,18 @@ function create()
     emitter2.setAlpha(0.3, 0.8);
     emitter2.gravity = 0;
     
+    emitter3 = game.add.emitter(game.world.centerX, 500, 200);
+    emitter3.scale.setTo(1, 1)
+    emitter3.makeParticles('redstar');
+    emitter3.setRotation(0, 0);
+    emitter3.setAlpha(0.3, 0.8);
+    emitter3.gravity = 0;
+    
     // User Interface
     scoreText = game.add.text(16, 16, 'Score: ', { fontSize: '64px', fill: '#ff0000' });
     enemyDamageText = game.add.text(game.world.centerX + 100, 830, enemyDamage + '%', { fontSize: '48px', fill: '#FFFFFF' });
     playerDamageText = game.add.text(game.world.centerX - 150, 830, playerDamage + '%', { fontSize: '48px', fill: '#FFFFFF' });
-    timeText = game.add.text(1100, 16, 'Time Left: ', { fontSize: '64px', fill: '#FFFFFF' });
+    timeText = game.add.text(game.world.centerX - 75, 16, '', { fontSize: '64px', fill: '#FFFFFF' });
 
 
     scoreText.stroke = '#000000';
@@ -237,12 +268,11 @@ function create()
     timeText.strokeThickness = 6;
     timeText.fill = '#FFFFFF';
     
-    
     displayTitleScreen();
 }
 
 function update() 
-{
+{   
     if (keyR.isDown)
     {
         restartGame();
@@ -391,59 +421,67 @@ function update()
             if (cursors.down.isDown && player.body.touching.down && hitPlatform)
             {
                 player.position.y = player.position.y + 15;
-            }
-
-            //right attack
-            if (spacebar.isDown && cursors.right.isDown)
+            }   
+            if (isAttacking == false)
             {
-                player.animations.play('jabright');
-                enableHitbox('attack1');
-                hitboxes.position.x = 50;
-                hitboxes.position.y = 0;
-                this.time.events.add(1000, disableHitboxes);
-
-            }
-
-            //left attack
-            if (spacebar.isDown && cursors.left.isDown)
-            {
-                player.animations.play('jableft');
-                enableHitbox('attack2');
-                hitboxes.position.x = -100;
-                hitboxes.position.y = 0;
-                this.time.events.add(1000, disableHitboxes);
-
-            }
-
-            //up attack
-            if (spacebar.isDown && cursors.up.isDown)
-            {
-                enableHitbox('attack3');
-                hitboxes.position.y = -100;
-                hitboxes.position.x = 0;
-                this.time.events.add(1000, disableHitboxes);
-
-            }
-
-            //down attack
-            if (spacebar.isDown && cursors.down.isDown)
-            {
-                enableHitbox('attack4');
                 
-                if (lastLeft)
+                //right attack
+                if (spacebar.isDown && cursors.right.isDown)
                 {
-                    hitboxes.position.y = 50;
+                    isAttacking = true;
+                    player.animations.play('jabright');
+                    enableHitbox('attack1');
+                    hitboxes.position.x = 50;
+                    hitboxes.position.y = 0;
+                    this.time.events.add(500, disableHitboxes);
+
+                }
+
+                //left attack
+                if (spacebar.isDown && cursors.left.isDown)
+                {
+                    isAttacking = true;
+                    player.animations.play('jableft');
+                    enableHitbox('attack2');
                     hitboxes.position.x = -100;
-                }
-                else
-                {
-                    hitboxes.position.y = 50;
-                    hitboxes.position.x = 0;
-                }
-                
-                this.time.events.add(1000, disableHitboxes);
+                    hitboxes.position.y = 0;
+                    this.time.events.add(500, disableHitboxes);
 
+                }
+
+                //up attack
+                if (spacebar.isDown && cursors.up.isDown)
+                {
+                    isAttacking = true;
+                    enableHitbox('attack3');
+                    hitboxes.position.y = -100;
+                    hitboxes.position.x = 0;
+                    this.time.events.add(500, disableHitboxes);
+
+                }
+
+                //down attack
+                if (spacebar.isDown && cursors.down.isDown)
+                {
+                    isAttacking = true;
+                    enableHitbox('attack4');
+
+                    if (lastLeft)
+                    {
+                        hitboxes.position.y = 50;
+                        hitboxes.position.x = -100;
+                    }
+                    else
+                    {
+                        hitboxes.position.y = 50;
+                        hitboxes.position.x = 0;
+                    }
+
+                    this.time.events.add(500, disableHitboxes);
+
+                }
             }
+            
             
             // checks if player is hit by enemy
             game.physics.arcade.overlap(enemy, player, hitByEnemy, null);  
@@ -539,6 +577,8 @@ function endGame ()
 // ends game and kills player
 function gotKilled () 
 {
+    enemy.kill();
+    awwsound.play();
     gameover = true;
     deathscreen = game.add.image(0, 0, 'deathscreen');
     deathscreen.scale.setTo(2, 2);
@@ -549,10 +589,12 @@ function gotKilled ()
 // ends game and kills enemy
 function enemyKilled () 
 {
+    KOsound.play();
     particleBurst();
     enemy.kill();
     enemyDamage = 0;
     enemyDamageText.text = enemyDamage + '%';
+    setDamageColor(enemyDamage, enemyDamageText);
     
     enemy = game.add.sprite(game.world.centerX, game.world.height - 600, 'sarge');
     enemy.scale.setTo(2, 2);
@@ -566,8 +608,13 @@ function enemyKilled ()
 //what happens when enemy hits player
 function hitByEnemy ()
 {
+    smashsound.play();
+    particleBurstHit(false);
+    
     playerDamage += 10;
     playerDamageText.text = playerDamage + '%';
+    setDamageColor(playerDamage, playerDamageText);
+    
     playerHitStun = true;
     
     //calculates knockback
@@ -606,6 +653,7 @@ function enableHitbox (hitboxName)
 function disableHitboxes ()
 {     
     hitboxes.forEachExists(function(hitbox) {hitbox.kill();});
+    isAttacking = false
 
 }
 
@@ -613,9 +661,11 @@ function disableHitboxes ()
 function hitBox1Enemy ()
 {
     punchsound.play();
-    particleBurstHit();
+    particleBurstHit(true);
     enemyDamage += 10;
     enemyDamageText.text = enemyDamage + '%';
+    setDamageColor(enemyDamage, enemyDamageText);
+    
     enemyHitStun = true
     
     //calculates knockback
@@ -628,9 +678,10 @@ function hitBox1Enemy ()
 function hitBox2Enemy ()
 {
     punchsound.play();
-    particleBurstHit();
+    particleBurstHit(true);
     enemyDamage += 10;
     enemyDamageText.text = enemyDamage + '%';
+    setDamageColor(enemyDamage, enemyDamageText);
     enemyHitStun = true
     
     //calculates knockback
@@ -643,9 +694,10 @@ function hitBox2Enemy ()
 function hitBox3Enemy ()
 {
     punchsound.play();
-    particleBurstHit();
+    particleBurstHit(true);
     enemyDamage += 10;
     enemyDamageText.text = enemyDamage + '%';
+    setDamageColor(enemyDamage, enemyDamageText);
     enemyHitStun = true
     
     //calculates knockback
@@ -657,9 +709,10 @@ function hitBox3Enemy ()
 function hitBox4Enemy ()
 {
     punchsound.play();
-    particleBurstHit();
+    particleBurstHit(true);
     enemyDamage += 10;
     enemyDamageText.text = enemyDamage + '%';
+    setDamageColor(enemyDamage, enemyDamageText);
     enemyHitStun = true
     
     //calculates knockback
@@ -702,12 +755,20 @@ function particleBurst()
     emitter.start(true, 3000, null, 50);
 }
 
-function particleBurstHit()
+function particleBurstHit(emitEnemy)
 {
-    emitter2.x = enemy.body.x;
-    emitter2.y = enemy.body.y;
-    
-    emitter2.start(true, 500, null, 20);
+    if (emitEnemy)
+    {
+        emitter2.x = enemy.body.x;
+        emitter2.y = enemy.body.y;
+        emitter2.start(true, 500, null, 20);
+    }
+    else
+    {
+        emitter3.x = player.body.x;
+        emitter3.y = player.body.y;
+        emitter3.start(true, 500, null, 20);
+    }
 }
 
 function displayTimeRemaining() 
@@ -731,7 +792,7 @@ function displayTimeRemaining()
         sec = '0' + sec;
     }
     
-    timeText.text = 'Time Left ' + min + ':' + sec;
+    timeText.text = '' + min + ':' + sec;
 }
 
 function displayTitleScreen()
@@ -747,11 +808,52 @@ function hideTitleScreen()
     titleScreen.kill();
     gameover = false;
     canTutorial = false;
+//    startCountdown();
     game.time.reset();
 }
 
 function toggleTutorial() 
 {
-        tutorialScreen = game.add.image(0, 0, 'tutorial');
+    tutorialScreen = game.add.image(0, 0, 'tutorial');
+}
 
+//function startCountdown()
+//{
+//    countdownText = game.add.text(game.world.centerX - 400, game.world.centerY - 100, 'READY?', { fontSize: '200px', fill: '#FFFFFF' });
+//    countdownText.stroke = '#000000';
+//    countdownText.strokeThickness = 6;
+//    countdownText.fill = '#FFFFFF';
+//    countdownText.lifespan = 700;
+
+//}
+
+function setDamageColor(damage, damageText)
+{
+    if (damage < 10)
+        damageText.fill = '#FFFFFF';
+    else if (damage < 20)
+        damageText.fill = '#FFf5f5';
+    else if (damage < 30)
+        damageText.fill = '#FFdede';
+    else if (damage < 40)
+        damageText.fill = '#FFc9c9';
+    else if (damage < 50)
+        damageText.fill = '#FFb8b8';
+    else if (damage < 60)
+        damageText.fill = '#FFa1a1';
+    else if (damage < 70)
+        damageText.fill = '#FF8a8a';
+    else if (damage < 80)
+        damageText.fill = '#FF7070';
+    else if (damage < 90)
+        damageText.fill = '#FF5454';
+    else if (damage < 100)
+        damageText.fill = '#FF3030';
+    else if (damage < 110)
+        damageText.fill = '#c70000';
+    else if (damage < 120)
+        damageText.fill = '#850000';
+    else
+        damageText.fill = '#520000';
+       
 }
