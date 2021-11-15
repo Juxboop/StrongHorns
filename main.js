@@ -3,20 +3,22 @@ var game = new Phaser.Game(1600, 900, Phaser.AUTO, '', { preload: preload, creat
 // preload assets
 function preload() 
 {
-    game.load.image('deathscreen', 'assets/endscr.png');
+    game.load.image('deathscreen', 'assets/Endscreen.png');
     game.load.image('winscreen', 'assets/winscreen.png');
     game.load.image('ground', 'assets/platform.png');
     game.load.image('tower', 'assets/utTower2.png');
-    game.load.image('football', 'assets/football.png');
+    game.load.image('football', 'assets/fist.png');
+    game.load.image('healthpack', 'assets/healthpack.png');
     game.load.spritesheet('hookem', 'assets/hookemRUNJABJUMP.png', 64, 64);
     game.load.spritesheet('sarge', 'assets/olsargeleftandright.png', 64, 64);
     game.load.image('confetti', 'assets/confetti.png');
     game.load.image('star', 'assets/star.png');
     game.load.image('redstar', 'assets/redstar.png');
-    game.load.image('goal', 'assets/fieldgoaltemp.png');
+    game.load.image('goalright', 'assets/fieldgoalright.png');
+    game.load.image('goalleft', 'assets/fieldgoalleft.png');
     
     game.load.image('titlescreen', 'assets/Strong_horns_title.png')
-    game.load.image('endscreen', 'assets/goodenough.png')
+    game.load.image('endscreen', 'assets/Endscreen.png')
     game.load.image('tutorial', 'assets/Strong_horns_tutorial.png')
     
     game.load.audio('bgm', 'assets/bensound-extremeaction.mp3')
@@ -27,6 +29,9 @@ function preload()
 }
 
 // defined variables
+var timeSinceLastIncrement = 0;
+var healthpacks;
+var instantRestart = false;
 var music;
 var punchsound;
 var smashsound;
@@ -40,11 +45,14 @@ var player;
 var enemy;
 var platforms;
 var stages;
-var fieldgoals;
+var pointfieldgoals;
+var nullfieldgoals;
 var cursors;
 var bounds;
 var score = 0;
+var hiscore = 0;
 var scoreText;
+var canScore = true;
 var gameover = true;
 var lastLeft = true;
 var jumpCounter = 0;
@@ -57,10 +65,10 @@ var hitbox3;
 var hitbox4;
 var spacebar;
 var keyR;
-var keyE;
-var keyU;
+var keyEnter;
 var keyT;
 var keyBackSpace;
+var enemyJumpCounter;
 var enemyHitStun = false;
 var playerHitStun = false;
 var knockback;
@@ -148,13 +156,34 @@ function create()
     ledge.anchor.set(0.5);
     
     //create fieldgoals
-//    fieldgoals = game.add.group();
-//    fieldgoals.enableBody = true;
-//    
-//    var fieldgoal = fieldgoals.create(100, game.world.centerY - 300, 'goal');
-//    fieldgoal.body.immovable = true;
-//    fieldgoal.scale.setTo(0.5, 0.5);
+    pointfieldgoals = game.add.group();
+    pointfieldgoals.enableBody = true;
     
+    nullfieldgoals = game.add.group();
+    nullfieldgoals.enableBody = true;
+    
+    var fieldgoalleft = pointfieldgoals.create(58, game.world.centerY - 246, 'goalleft');
+    fieldgoalleft.body.immovable = true;
+    fieldgoalleft.scale.setTo(0.5, 0.5);
+    
+    var fieldgoalright = nullfieldgoals.create(40, game.world.centerY - 300, 'goalright');
+    fieldgoalright.body.immovable = true;
+    fieldgoalright.scale.setTo(0.5, 0.5);
+    
+    fieldgoalleft = pointfieldgoals.create(1532, game.world.centerY - 246, 'goalleft');
+    fieldgoalleft.body.immovable = true;
+    fieldgoalleft.scale.setTo(0.5, 0.5);
+    fieldgoalleft.scale.x *= -1;
+    
+    fieldgoalright = nullfieldgoals.create(1550, game.world.centerY - 300, 'goalright');
+    fieldgoalright.body.immovable = true;
+    fieldgoalright.scale.setTo(0.5, 0.5);
+    fieldgoalright.scale.x *= -1;
+    
+    //create healthpacks
+//    healthpacks = game.add.group();
+//    healthpacks.enableBody = true;
+//    healthpacks.scale.setTo(0.05, 0.05);
     
     //create player
     player = game.add.sprite(game.world.centerX, game.world.height - 300, 'hookem');
@@ -165,7 +194,7 @@ function create()
     
     //create enemy
     enemy = game.add.sprite(game.world.centerX + 200, game.world.height - 600, 'sarge');
-    enemy.scale.setTo(2, 2);
+    enemy.scale.setTo(1.5, 1.5);
     game.physics.arcade.enable(enemy);
     enemy.body.gravity.y = 2000;
     enemy.body.collideWorldBounds = false;
@@ -175,7 +204,7 @@ function create()
     spacebar = game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
     keyR = game.input.keyboard.addKey(Phaser.Keyboard.R);
     keyE = game.input.keyboard.addKey(Phaser.Keyboard.E);
-    keyU = game.input.keyboard.addKey(Phaser.Keyboard.U)
+    keyEnter = game.input.keyboard.addKey(Phaser.Keyboard.ENTER)
     keyT = game.input.keyboard.addKey(Phaser.Keyboard.T)
     keyBackSpace = game.input.keyboard.addKey(Phaser.Keyboard.BACKSPACE)
 
@@ -191,7 +220,7 @@ function create()
     //sounds
     
     music = game.add.audio('bgm');
-    music.volume = 0.05;
+    music.volume = 0.03;
     
     punchsound = game.add.audio('punchsound');
     smashsound = game.add.audio('smashsound'); 
@@ -206,21 +235,25 @@ function create()
     
     //right hitbox
     hitbox1 = hitboxes.create(100, 0, 'football');
-    hitbox1.scale.setTo(10,3)
+    hitbox1.scale.setTo(.1, .1)
     hitbox1.name = 'attack1'
+    hitbox1.alpha = 1;
     
     //left hitbox
     hitbox2 = hitboxes.create(-100, 0, 'football');
-    hitbox2.scale.setTo(10,3)
+    hitbox2.scale.setTo(.1, .1)
     hitbox2.name = 'attack2'
+    hitbox2.alpha = 1;
     
     hitbox3 = hitboxes.create(0, -100, 'football');
-    hitbox3.scale.setTo(10,3)
+    hitbox3.scale.setTo(.1, .1)
     hitbox3.name = 'attack3'
+    hitbox3.alpha = 1;
     
     hitbox4 = hitboxes.create(0, 100, 'football');
-    hitbox4.scale.setTo(10,3)
+    hitbox4.scale.setTo(.1, .1)
     hitbox4.name = 'attack4'
+    hitbox4.alpha = 1;
     
     disableHitboxes()
         
@@ -246,7 +279,7 @@ function create()
     emitter3.gravity = 0;
     
     // User Interface
-    scoreText = game.add.text(16, 16, 'Score: ', { fontSize: '64px', fill: '#ff0000' });
+    scoreText = game.add.text(16, 16, 'Score: ' + score, { fontSize: '64px', fill: '#ff0000' });
     enemyDamageText = game.add.text(game.world.centerX + 100, 830, enemyDamage + '%', { fontSize: '48px', fill: '#FFFFFF' });
     playerDamageText = game.add.text(game.world.centerX - 150, 830, playerDamage + '%', { fontSize: '48px', fill: '#FFFFFF' });
     timeText = game.add.text(game.world.centerX - 75, 16, '', { fontSize: '64px', fill: '#FFFFFF' });
@@ -273,23 +306,24 @@ function create()
 
 function update() 
 {   
-    if (keyR.isDown)
+    if (keyR.justDown)
     {
+        instantRestart = true;
         restartGame();
     }
     
-    if (keyBackSpace.isDown)
-    {
+    if (keyBackSpace.justDown)
+    {   instantRestart = false;
         restartGame();
     }
     
-    if (keyU.isDown)
+    if (keyEnter.justDown)
     {
         hideTitleScreen();
         music.play();
     }
     
-    if (keyT.isDown && canTutorial)
+    if (keyT.justDown)
     {
         toggleTutorial();
     }
@@ -298,9 +332,15 @@ function update()
     //collision
     var hitStage = game.physics.arcade.collide(player, stages);
     var hitStage1 = game.physics.arcade.collide(enemy, stages);
+//    game.physics.arcade.collide(healthpacks, stages);
     
     var hitPlatform = game.physics.arcade.collide(player, platforms);
+    var hitPlatform1 = game.physics.arcade.collide(enemy, platforms);
+//    game.physics.arcade.collide(healthpacks, platforms);
     
+
+    game.physics.arcade.overlap(enemy, pointfieldgoals, enemyFieldGoal, null);
+//    game.physics.arcade.overlap(player, healthpacks, collectHealthpack, null);
     
     //checks overlap of out of bounds
     game.physics.arcade.overlap(player, bounds, gotKilled, null);
@@ -310,6 +350,15 @@ function update()
     {
         
         
+//        timeSinceLastIncrement += game.time.elapsed;
+//  
+//        if (timeSinceLastIncrement >= 1000)
+//        {
+//            var healthpack = healthpacks.create(8000 + Math.random() * 22000, game.world.height - 800, 'healthpack');
+//            healthpack.body.gravity.y = 10000;
+//            
+//            timeSinceLastIncrement = 0;
+//        }
         
         if (timeOver == false)
         {
@@ -431,9 +480,17 @@ function update()
                     isAttacking = true;
                     player.animations.play('jabright');
                     enableHitbox('attack1');
-                    hitboxes.position.x = 50;
-                    hitboxes.position.y = 0;
-                    this.time.events.add(500, disableHitboxes);
+                    this.time.events.add(300, disableHitboxes);
+                    if (lastLeft)
+                    {
+                        hitboxes.position.y = 50;
+                        hitboxes.position.x = -75;
+                    }
+                    else
+                    {
+                        hitboxes.position.y = 0;
+                        hitboxes.position.x = 75;
+                    }
 
                 }
 
@@ -445,7 +502,7 @@ function update()
                     enableHitbox('attack2');
                     hitboxes.position.x = -100;
                     hitboxes.position.y = 0;
-                    this.time.events.add(500, disableHitboxes);
+                    this.time.events.add(300, disableHitboxes);
 
                 }
 
@@ -456,7 +513,7 @@ function update()
                     enableHitbox('attack3');
                     hitboxes.position.y = -100;
                     hitboxes.position.x = 0;
-                    this.time.events.add(500, disableHitboxes);
+                    this.time.events.add(300, disableHitboxes);
 
                 }
 
@@ -474,10 +531,10 @@ function update()
                     else
                     {
                         hitboxes.position.y = 50;
-                        hitboxes.position.x = 0;
+                        hitboxes.position.x = 75;
                     }
 
-                    this.time.events.add(500, disableHitboxes);
+                    this.time.events.add(300, disableHitboxes);
 
                 }
             }
@@ -492,15 +549,25 @@ function update()
         {
             player.position.y = player.position.y - 4.1;
             player.body.velocity.y = -300;
-            //player.body.velocity.y = -650;
         }
         
         if (enemyHitStun == false)
         {
-            
+            // Enemy AI
             // see if enemy and player within 400px of each other
             if (game.physics.arcade.distanceBetween(enemy, player) < 600) 
-            {
+            {       
+                    // resets jump counter
+                    if (enemy.body.touching.down && (hitPlatform1 || hitStage1))
+                    {
+                        enemyJumpCounter = 1;
+                    }
+                    
+                    if ((hitPlatform1 && !(player.body.touching.down)) || (enemyHitStun && (hitPlatform1 && !(enemy.body.touching.down))))
+                    {
+                        enemy.position.y = enemy.position.y - 10;
+                        //enemy.body.velocity.y = -300;
+                    }
 
                     // if player to left of enemy AND enemy moving to right (or not moving)
                     if (player.x < enemy.x - 5 && enemy.body.velocity.x >= 0) {
@@ -508,24 +575,21 @@ function update()
                         enemy.body.velocity.x = -250;
                         enemy.frame = 1;
                     }
+                
                     // if player to right of enemy AND enemy moving to left (or not moving)
                     else if (player.x > enemy.x + 5 && enemy.body.velocity.x <= 0) {
                         // move enemy to right
                         enemy.body.velocity.x = 250;
                         enemy.frame = 0;
                     }
-                
-                    /*
-                    else if (player.y > enemy.y + 5 && enemy.body.velocity.y <= 0) {
-                        // move enemy to right
-                        enemy.body.velocity.y = 250;
-                    }
                     
-                    else if (player.y < enemy.y - 5 && enemy.body.velocity.y >= 0) {
-                        // move enemy to left
-                        enemy.body.velocity.y = -250;
-                    }
-                    */
+                    // enemy jump
+                    else if (player.y < enemy.y - 120 && enemyJumpCounter == 1 && enemy.x < player.x + 100 && enemy.x > player.x - 100){
+                        enemyJumpCounter = enemyJumpCounter - 1
+                        enemy.body.velocity.y = -900;
+                    }   
+                    
+                
                     else if (player.body.velocity.x == 0) {
                         enemy.body.velocity.x = 0
                     }
@@ -552,8 +616,6 @@ function restartGame ()
     game.state.restart();
     score = 0;
     
-    //deathscreen.kill();
-    //gameOverText.kill();
     enemyDamage = 0;
     playerDamage = 0;
     music.stop();
@@ -568,8 +630,15 @@ function endGame ()
     player.kill();
     // gameOverText = game.add.text(game.world.centerX, game.world.centerY, 'GAME OVER', { fontSize: '100px', fill: '#000000' });
     endscreen = game.add.image(0, 0, 'endscreen');
-    //endscreen.scale.setTo(2, 2);
+    endscreen.scale.setTo(.85, .85);
     
+    if (score > hiscore)
+    {
+        hiscore = score;
+    }
+   
+    var hiscoreText = game.add.text(1250, 117, ': ' + hiscore, { fontSize: '64px', fill: '#ff0000' });
+    scoreText = game.add.text(975, 250, 'Current Score: ' + score, { fontSize: '64px', fill: '#FFFFFF', stroke: '#000000', strokeThickness: 6 });
     
     
 }
@@ -581,14 +650,22 @@ function gotKilled ()
     awwsound.play();
     gameover = true;
     deathscreen = game.add.image(0, 0, 'deathscreen');
-    deathscreen.scale.setTo(2, 2);
-    //game.add.text(16, 16, 'Score: ' + score, { fontSize: '32px', fill: '#ff0000' });
+    deathscreen.scale.setTo(0.85, 0.85);
+    
+    if (score > hiscore)
+    {
+        hiscore = score;
+    }
+   
+    var hiscoreText = game.add.text(1250, 117, ': ' + hiscore, { fontSize: '64px', fill: '#ff0000' });
+    scoreText = game.add.text(975, 250, 'Current Score: ' + score, { fontSize: '64px', fill: '#FFFFFF', stroke: '#000000', strokeThickness: 6 });
      
 }
 
 // ends game and kills enemy
 function enemyKilled () 
 {
+    canScore = true;
     KOsound.play();
     particleBurst();
     enemy.kill();
@@ -596,8 +673,8 @@ function enemyKilled ()
     enemyDamageText.text = enemyDamage + '%';
     setDamageColor(enemyDamage, enemyDamageText);
     
-    enemy = game.add.sprite(game.world.centerX, game.world.height - 600, 'sarge');
-    enemy.scale.setTo(2, 2);
+    enemy = game.add.sprite(400 + Math.random() * 800, game.world.height - 800, 'sarge');
+    enemy.scale.setTo(1.5, 1.5);
     game.physics.arcade.enable(enemy);
     enemy.body.gravity.y = 2000;
     enemy.body.collideWorldBounds = false;
@@ -797,9 +874,17 @@ function displayTimeRemaining()
 
 function displayTitleScreen()
 {
-    gameover = true;
-    titleScreen = game.add.image(0, 0, 'titlescreen');
-    canTutorial = true;
+    if (!instantRestart)
+    {
+        gameover = true;
+        titleScreen = game.add.image(0, 0, 'titlescreen');
+        canTutorial = true;
+    }
+    else
+    {
+        music.play();
+        gameover = false;
+    }
 }
 
 function hideTitleScreen() 
@@ -814,17 +899,33 @@ function hideTitleScreen()
 
 function toggleTutorial() 
 {
-    tutorialScreen = game.add.image(0, 0, 'tutorial');
+    if (canTutorial)
+    {
+        tutorialScreen = game.add.image(0, 0, 'tutorial');
+        canTutorial = false
+    }
+    else
+    {
+        tutorialScreen.kill();
+        canTutorial = true;
+    }
 }
 
-//function startCountdown()
-//{
-//    countdownText = game.add.text(game.world.centerX - 400, game.world.centerY - 100, 'READY?', { fontSize: '200px', fill: '#FFFFFF' });
-//    countdownText.stroke = '#000000';
-//    countdownText.strokeThickness = 6;
-//    countdownText.fill = '#FFFFFF';
-//    countdownText.lifespan = 700;
+function enemyFieldGoal()
+{
+    if(canScore)
+    {
+        score = score + 1;
+        canScore = false;
+        scoreText.text = 'Score: ' + score;
+    }
+}
 
+//function collectHealthpack(player, healthpack)
+//{
+//    playerDamage -= 20
+//    healthpack.kill()
+//    playerDamageText.text = enemyDamage + '%';
 //}
 
 function setDamageColor(damage, damageText)
