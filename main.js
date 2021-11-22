@@ -5,12 +5,13 @@ function preload()
 {
     game.load.image('deathscreen', 'assets/Endscreen.png');
     game.load.image('winscreen', 'assets/winscreen.png');
-    game.load.image('ground', 'assets/platform.png');
+    game.load.image('ground', 'assets/ground.png');
+    game.load.image('platform', 'assets/platform.png');
     game.load.image('tower', 'assets/utTower2.png');
     game.load.image('football', 'assets/fist.png');
-    game.load.image('healthpack', 'assets/healthpack.png');
+    game.load.image('greenplus', 'assets/greenplus.png');
     game.load.spritesheet('hookem', 'assets/hookemRUNJABJUMP.png', 64, 64);
-    game.load.spritesheet('sarge', 'assets/olsargeleftandright.png', 64, 64);
+    game.load.spritesheet('olsarge', 'assets/olsarge.png', 64, 64);
     game.load.image('confetti', 'assets/confetti.png');
     game.load.image('star', 'assets/star.png');
     game.load.image('redstar', 'assets/redstar.png');
@@ -30,8 +31,6 @@ function preload()
 }
 
 // defined variables
-var timeSinceLastIncrement = 0;
-var healthpacks;
 var instantRestart = false;
 var music;
 var punchsound;
@@ -84,6 +83,7 @@ var emitter;
 var emitter2;
 var emitter3;
 var emitter4;
+var emitter5;
 var timeLimit = 60;
 var timeOver = false;
 var timeText;
@@ -115,13 +115,13 @@ function create()
     bound.body.immovable = true;
     
     //left blast zone
-    bound = bounds.create(-100, 0, 'ground');
-    bound.scale.setTo(0.01, 23)
+    bound = bounds.create(-50, 0, 'ground');
+    bound.scale.setTo(0.01, 29)
     bound.body.immovable = true;
     
     //right blast zone
     bound = bounds.create(1700, 0, 'ground');
-    bound.scale.setTo(0.01, 23)
+    bound.scale.setTo(0.01, 29)
     bound.body.immovable = true;
     
     
@@ -141,21 +141,21 @@ function create()
     platforms.enableBody = true;
     
     //create left platform
-    var ledge = platforms.create(game.world.centerX - 200, 550, 'ground');
+    var ledge = platforms.create(game.world.centerX - 200, 550, 'platform');
     ledge.body.immovable = true;
-    ledge.scale.setTo(0.4, 0.3)
+    ledge.scale.setTo(1.5, 1.3)
     ledge.anchor.set(0.5);
 
     //create right platform
-    ledge = platforms.create(game.world.centerX + 200, 550, 'ground');
+    ledge = platforms.create(game.world.centerX + 217, 550, 'platform');
     ledge.body.immovable = true;
-    ledge.scale.setTo(0.4, 0.3)
+    ledge.scale.setTo(1.5, 1.3)
     ledge.anchor.set(0.5);
     
     //create top platformu
-    ledge = platforms.create(game.world.centerX, 400, 'ground');
+    ledge = platforms.create(game.world.centerX + 10, 400, 'platform');
     ledge.body.immovable = true;
-    ledge.scale.setTo(0.4, 0.3)
+    ledge.scale.setTo(1.5, 1.3)
     ledge.anchor.set(0.5);
     
     //create fieldgoals
@@ -195,11 +195,6 @@ function create()
     fieldgoalleft.scale.setTo(0.5, 1);
     fieldgoalleft.scale.x *= -1;
     
-    //create healthpacks
-//    healthpacks = game.add.group();
-//    healthpacks.enableBody = true;
-//    healthpacks.scale.setTo(0.05, 0.05);
-    
     //create player
     player = game.add.sprite(game.world.centerX, game.world.height - 300, 'hookem');
     player.scale.setTo(1.25, 1.25);
@@ -208,7 +203,7 @@ function create()
     player.body.collideWorldBounds = false;
     
     //create enemy
-    enemy = game.add.sprite(game.world.centerX + 200, game.world.height - 600, 'sarge');
+    enemy = game.add.sprite(game.world.centerX + 200, game.world.height - 600, 'olsarge');
     enemy.scale.setTo(1.5, 1.5);
     game.physics.arcade.enable(enemy);
     enemy.body.gravity.y = 2000;
@@ -222,8 +217,7 @@ function create()
     keyEnter = game.input.keyboard.addKey(Phaser.Keyboard.ENTER)
     keyT = game.input.keyboard.addKey(Phaser.Keyboard.T)
     keyBackSpace = game.input.keyboard.addKey(Phaser.Keyboard.BACKSPACE)
-
-
+    
     //player animations
     player.animations.add('right', [0, 1, 2, 3, 4], 10, true);
     player.animations.add('left', [5, 6, 7, 8, 9], 10, true);
@@ -231,9 +225,12 @@ function create()
     player.animations.add('jabright', [11], 10, true);
     player.animations.add('jumpleft', [12, 13, 14], 3, true);
     player.animations.add('jumpright', [15, 16, 17], 3, true);
-
-    //sounds
     
+    //enemy animations
+    enemy.animations.add('enemyright', [0, 2, 3], 10, true);
+    enemy.animations.add('enemyleft', [1, 4, 5], 10, true);
+    
+    //sounds
     music = game.add.audio('bgm');
     music.volume = 0.03;
     
@@ -280,7 +277,7 @@ function create()
     // sarge particles
     emitter = game.add.emitter(game.world.centerX, 500, 200);
     emitter.scale.setTo(1, 1)
-    emitter.makeParticles('sarge');
+    emitter.makeParticles('olsarge');
     emitter.setRotation(0, 0);
     emitter.setAlpha(0.3, 0.8);
     emitter.gravity = 0;
@@ -307,6 +304,13 @@ function create()
     emitter4.setRotation(0, 0);
     emitter4.setAlpha(0.3, 0.8);
     emitter4.gravity = 0;
+    
+    emitter5 = game.add.emitter(game.world.centerX - 150, 830, 200);
+    emitter5.scale.setTo(1, 1)
+    emitter5.makeParticles('greenplus');
+    emitter5.setRotation(0, 0);
+    emitter5.setAlpha(0.3, 0.8);
+    emitter5.gravity = 0;
     
     // User Interface
     scoreText = game.add.text(16, 16, 'Score: ' + score, { fontSize: '64px', fill: '#ff0000' });
@@ -362,24 +366,12 @@ function update()
     //collision
     var hitStage = game.physics.arcade.collide(player, stages);
     var hitStage1 = game.physics.arcade.collide(enemy, stages);
-//    game.physics.arcade.collide(healthpacks, stages);
     
-    var hitPlatform = game.physics.arcade.collide(player, platforms);
-    var hitPlatform1 = game.physics.arcade.collide(enemy, platforms);
-//    game.physics.arcade.collide(healthpacks, platforms);
-    
-
     game.physics.arcade.overlap(enemy, pointfieldgoals, enemyFieldGoal, null);
-//    game.physics.arcade.overlap(player, healthpacks, collectHealthpack, null);
     
     //checks overlap of out of bounds
     game.physics.arcade.overlap(player, bounds, gotKilled, null);
     game.physics.arcade.overlap(enemy, bounds, enemyKilled, null);  
-    
-//    if (score % 5 == 0 && canHeal)
-//    {
-//        heal();
-//    }
 
     if (gameover == false)
     {
@@ -406,6 +398,8 @@ function update()
         // checks if player is in hitstun
         if (playerHitStun == false)
         {
+            var hitPlatform = game.physics.arcade.collide(player, platforms);
+            
             if (player.body.velocity.y < 0)
             {
                 player.animations.play('jumpleft')
@@ -578,6 +572,8 @@ function update()
         
         if (enemyHitStun == false)
         {
+            var hitPlatform1 = game.physics.arcade.collide(enemy, platforms);
+            
             // Enemy AI
             // see if enemy and player within 400px of each other
             if (game.physics.arcade.distanceBetween(enemy, player) < 600) 
@@ -598,14 +594,14 @@ function update()
                     if (player.x < enemy.x - 5 && enemy.body.velocity.x >= 0) {
                         // move enemy to left
                         enemy.body.velocity.x = -250;
-                        enemy.frame = 1;
+                        enemy.animations.play('enemyleft')
                     }
                 
                     // if player to right of enemy AND enemy moving to left (or not moving)
                     else if (player.x > enemy.x + 5 && enemy.body.velocity.x <= 0) {
                         // move enemy to right
                         enemy.body.velocity.x = 250;
-                        enemy.frame = 0;
+                        enemy.animations.play('enemyright')
                     }
                     
                     // enemy jump
@@ -699,13 +695,21 @@ function enemyKilled ()
     enemyDamageText.text = enemyDamage + '%';
     setDamageColor(enemyDamage, enemyDamageText);
     
-    enemy = game.add.sprite(400 + Math.random() * 800, game.world.height - 800, 'sarge');
+    enemy = game.add.sprite(400 + Math.random() * 800, game.world.height - 800, 'olsarge');
     enemy.scale.setTo(1.5, 1.5);
     game.physics.arcade.enable(enemy);
     enemy.body.gravity.y = 2000;
     enemy.body.collideWorldBounds = false;
+    enemy.animations.add('enemyright', [0, 2, 3], 10, true);
+    enemy.animations.add('enemyleft', [1, 4, 5], 10, true);
+    
     score += 1;
     scoreText.text = 'Score: ' + score;
+    
+    if (score % 5 == 0)
+    {
+        heal();
+    }
 }
 
 //what happens when enemy hits player
@@ -939,14 +943,20 @@ function enemyFieldGoal()
         score = score + 1;
         canScore = false;
         scoreText.text = 'Score: ' + score;
+        
+        if (score % 5 == 0)
+        {
+            heal();
+        }
     }
 }
 
-//function heal()
-//{
-//    playerDamage -= 20
-//    playerDamageText.text = enemyDamage + '%';
-//}
+function heal()
+{
+    emitter5.start(true, 1000, null, 20);
+    playerDamage -= 20;
+    playerDamageText.text = playerDamage + '%';
+}
 
 function setDamageColor(damage, damageText)
 {
