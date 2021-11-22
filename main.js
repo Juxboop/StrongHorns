@@ -26,6 +26,7 @@ function preload()
     game.load.audio('smashsound', 'assets/smash_sound.mp3')
     game.load.audio('awwsound', 'assets/aww_sound.mp3')
     game.load.audio('KOsound', 'assets/KOsound.mp3')
+    game.load.audio('whistle', 'assets/whistle.mp3')
 }
 
 // defined variables
@@ -37,6 +38,7 @@ var punchsound;
 var smashsound;
 var awwsound;
 var KOsound;
+var whistlesound;
 var deathscreen;
 var endscreen;
 var tutorialScreen;
@@ -81,6 +83,7 @@ var playerDamageText;
 var emitter;
 var emitter2;
 var emitter3;
+var emitter4;
 var timeLimit = 60;
 var timeOver = false;
 var timeText;
@@ -162,6 +165,7 @@ function create()
     nullfieldgoals = game.add.group();
     nullfieldgoals.enableBody = true;
     
+    // leftside goal
     var fieldgoalleft = pointfieldgoals.create(58, game.world.centerY - 246, 'goalleft');
     fieldgoalleft.body.immovable = true;
     fieldgoalleft.scale.setTo(0.5, 0.5);
@@ -170,6 +174,12 @@ function create()
     fieldgoalright.body.immovable = true;
     fieldgoalright.scale.setTo(0.5, 0.5);
     
+    fieldgoalleft = nullfieldgoals.create(114, game.world.centerY + 100, 'goalleft');
+    fieldgoalleft.body.immovable = true;
+    fieldgoalleft.scale.setTo(0.5, 1);
+    fieldgoalleft.scale.x *= -1;
+    
+    // rightside goal
     fieldgoalleft = pointfieldgoals.create(1532, game.world.centerY - 246, 'goalleft');
     fieldgoalleft.body.immovable = true;
     fieldgoalleft.scale.setTo(0.5, 0.5);
@@ -179,6 +189,11 @@ function create()
     fieldgoalright.body.immovable = true;
     fieldgoalright.scale.setTo(0.5, 0.5);
     fieldgoalright.scale.x *= -1;
+    
+    fieldgoalleft = nullfieldgoals.create(1494, game.world.centerY + 100, 'goalleft');
+    fieldgoalleft.body.immovable = true;
+    fieldgoalleft.scale.setTo(0.5, 1);
+    fieldgoalleft.scale.x *= -1;
     
     //create healthpacks
 //    healthpacks = game.add.group();
@@ -226,7 +241,12 @@ function create()
     smashsound = game.add.audio('smashsound'); 
     awwsound = game.add.audio('awwsound');
     KOsound = game.add.audio('KOsound');
+    whistlesound = game.add.audio('whistle');
+    
     KOsound.volume = 0.2;
+    whistlesound.volume = 0.2;
+    
+    
     
     //hitboxes
     hitboxes = game.add.group();
@@ -256,7 +276,8 @@ function create()
     hitbox4.alpha = 1;
     
     disableHitboxes()
-        
+    
+    // sarge particles
     emitter = game.add.emitter(game.world.centerX, 500, 200);
     emitter.scale.setTo(1, 1)
     emitter.makeParticles('sarge');
@@ -264,6 +285,7 @@ function create()
     emitter.setAlpha(0.3, 0.8);
     emitter.gravity = 0;
     
+    // cause damage particles
     emitter2 = game.add.emitter(game.world.centerX, 500, 200);
     emitter2.scale.setTo(1, 1)
     emitter2.makeParticles('star');
@@ -271,12 +293,20 @@ function create()
     emitter2.setAlpha(0.3, 0.8);
     emitter2.gravity = 0;
     
+    // receive damage particles
     emitter3 = game.add.emitter(game.world.centerX, 500, 200);
     emitter3.scale.setTo(1, 1)
     emitter3.makeParticles('redstar');
     emitter3.setRotation(0, 0);
     emitter3.setAlpha(0.3, 0.8);
     emitter3.gravity = 0;
+    
+    emitter4 = game.add.emitter(200, 50, 200);
+    emitter4.scale.setTo(1, 1)
+    emitter4.makeParticles('star');
+    emitter4.setRotation(0, 0);
+    emitter4.setAlpha(0.3, 0.8);
+    emitter4.gravity = 0;
     
     // User Interface
     scoreText = game.add.text(16, 16, 'Score: ' + score, { fontSize: '64px', fill: '#ff0000' });
@@ -345,20 +375,15 @@ function update()
     //checks overlap of out of bounds
     game.physics.arcade.overlap(player, bounds, gotKilled, null);
     game.physics.arcade.overlap(enemy, bounds, enemyKilled, null);  
+    
+//    if (score % 5 == 0 && canHeal)
+//    {
+//        heal();
+//    }
 
     if (gameover == false)
     {
         
-        
-//        timeSinceLastIncrement += game.time.elapsed;
-//  
-//        if (timeSinceLastIncrement >= 1000)
-//        {
-//            var healthpack = healthpacks.create(8000 + Math.random() * 22000, game.world.height - 800, 'healthpack');
-//            healthpack.body.gravity.y = 10000;
-//            
-//            timeSinceLastIncrement = 0;
-//        }
         
         if (timeOver == false)
         {
@@ -665,9 +690,10 @@ function gotKilled ()
 // ends game and kills enemy
 function enemyKilled () 
 {
+    emitter4.start(true, 1000, null, 20);
     canScore = true;
     KOsound.play();
-    particleBurst();
+    particleBurst(emitter);
     enemy.kill();
     enemyDamage = 0;
     enemyDamageText.text = enemyDamage + '%';
@@ -686,7 +712,7 @@ function enemyKilled ()
 function hitByEnemy ()
 {
     smashsound.play();
-    particleBurstHit(false);
+    particleBurstHit(player, emitter3);
     
     playerDamage += 10;
     playerDamageText.text = playerDamage + '%';
@@ -738,7 +764,7 @@ function disableHitboxes ()
 function hitBox1Enemy ()
 {
     punchsound.play();
-    particleBurstHit(true);
+    particleBurstHit(enemy, emitter2);
     enemyDamage += 10;
     enemyDamageText.text = enemyDamage + '%';
     setDamageColor(enemyDamage, enemyDamageText);
@@ -755,7 +781,7 @@ function hitBox1Enemy ()
 function hitBox2Enemy ()
 {
     punchsound.play();
-    particleBurstHit(true);
+    particleBurstHit(enemy, emitter2);
     enemyDamage += 10;
     enemyDamageText.text = enemyDamage + '%';
     setDamageColor(enemyDamage, enemyDamageText);
@@ -771,7 +797,7 @@ function hitBox2Enemy ()
 function hitBox3Enemy ()
 {
     punchsound.play();
-    particleBurstHit(true);
+    particleBurstHit(enemy, emitter2);
     enemyDamage += 10;
     enemyDamageText.text = enemyDamage + '%';
     setDamageColor(enemyDamage, enemyDamageText);
@@ -786,7 +812,7 @@ function hitBox3Enemy ()
 function hitBox4Enemy ()
 {
     punchsound.play();
-    particleBurstHit(true);
+    particleBurstHit(enemy, emitter2);
     enemyDamage += 10;
     enemyDamageText.text = enemyDamage + '%';
     setDamageColor(enemyDamage, enemyDamageText);
@@ -824,7 +850,7 @@ function disableEnemyHitStun ()
     enemyHitStun = false;
 }
 
-function particleBurst()
+function particleBurst(emitter)
 {
     emitter.x = enemy.body.x;
     emitter.y = enemy.body.y;
@@ -832,20 +858,12 @@ function particleBurst()
     emitter.start(true, 3000, null, 50);
 }
 
-function particleBurstHit(emitEnemy)
+function particleBurstHit(target, emitter)
 {
-    if (emitEnemy)
-    {
-        emitter2.x = enemy.body.x;
-        emitter2.y = enemy.body.y;
-        emitter2.start(true, 500, null, 20);
-    }
-    else
-    {
-        emitter3.x = player.body.x;
-        emitter3.y = player.body.y;
-        emitter3.start(true, 500, null, 20);
-    }
+        emitter.x = target.body.x;
+        emitter.y = target.body.y;
+        emitter.start(true, 500, null, 20);
+    
 }
 
 function displayTimeRemaining() 
@@ -912,19 +930,21 @@ function toggleTutorial()
 }
 
 function enemyFieldGoal()
-{
+{   
+    
     if(canScore)
     {
+        whistlesound.play()
+        emitter4.start(true, 1000, null, 20);
         score = score + 1;
         canScore = false;
         scoreText.text = 'Score: ' + score;
     }
 }
 
-//function collectHealthpack(player, healthpack)
+//function heal()
 //{
 //    playerDamage -= 20
-//    healthpack.kill()
 //    playerDamageText.text = enemyDamage + '%';
 //}
 
