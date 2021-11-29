@@ -21,6 +21,7 @@ function preload()
     game.load.image('titlescreen', 'assets/Strong_horns_title.png')
     game.load.image('endscreen', 'assets/Endscreen.png')
     game.load.image('tutorial', 'assets/Strong_horns_tutorial.png')
+    game.load.image('tutorial2', 'assets/Strong_horns_tutorial_2.png')
     
     game.load.audio('bgm', 'assets/bensound-extremeaction.mp3')
     game.load.audio('punchsound', 'assets/punch_sound.wav')
@@ -40,8 +41,9 @@ var KOsound;
 var whistlesound;
 var deathscreen;
 var endscreen;
-var tutorialScreen;
+var tutorialScreen; var tutorialScreen2
 var canTutorial;
+var tutorialPage = 0;
 var player;
 var enemy;
 var platforms;
@@ -357,7 +359,7 @@ function update()
         music.play();
     }
     
-    if (keyT.justDown)
+    if (keyT.justDown && canTutorial)
     {
         toggleTutorial();
     }
@@ -921,15 +923,23 @@ function hideTitleScreen()
 
 function toggleTutorial() 
 {
-    if (canTutorial)
+    if (tutorialPage == 0)
     {
         tutorialScreen = game.add.image(0, 0, 'tutorial');
-        canTutorial = false
+        tutorialPage = 1;
     }
-    else
+    else if (tutorialPage == 1)
     {
         tutorialScreen.kill();
-        canTutorial = true;
+        tutorialScreen2 = game.add.image(0, 0, 'tutorial2');
+        tutorialPage = 2;
+        
+    }
+    else if (tutorialPage == 2)
+    {
+        tutorialScreen2.kill();
+        tutorialPage = 0;
+        
     }
 }
 
@@ -956,6 +966,7 @@ function heal()
     emitter5.start(true, 1000, null, 20);
     playerDamage -= 20;
     playerDamageText.text = playerDamage + '%';
+    setDamageColor(playerDamage, playerDamageText);
 }
 
 function setDamageColor(damage, damageText)
