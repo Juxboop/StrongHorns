@@ -19,6 +19,7 @@ function preload()
     game.load.image('goalleft', 'assets/fieldgoalleft.png');
     game.load.image('hookemhead', 'assets/hookemhead.png');
     game.load.image('olsargehead', 'assets/olsargehead.png');
+    game.load.image('smoketrail', 'assets/smoketrail.png');
     
     game.load.image('titlescreen', 'assets/Strong_horns_title.png')
     game.load.image('endscreen', 'assets/Endscreen.png')
@@ -28,6 +29,9 @@ function preload()
     game.load.audio('bgm', 'assets/bensound-extremeaction.mp3')
     game.load.audio('punchsound', 'assets/punch_sound.wav')
     game.load.audio('smashsound', 'assets/smash_sound.mp3')
+    game.load.audio('stompsound', 'assets/stomp_sound.mp3')
+    game.load.audio('downsmashsound', 'assets/downsmash_sound.mp3')
+    game.load.audio('upairsound', 'assets/upair_sound.mp3')
     game.load.audio('awwsound', 'assets/aww_sound.mp3')
     game.load.audio('KOsound', 'assets/KOsound.mp3')
     game.load.audio('whistle', 'assets/whistle.mp3')
@@ -39,6 +43,9 @@ var instantRestart = false;
 var music;
 var punchsound;
 var smashsound;
+var stompsound;
+var downsmashsound;
+var upairsound;
 var awwsound;
 var KOsound;
 var whistlesound;
@@ -95,6 +102,7 @@ var emitter2;
 var emitter3;
 var emitter4;
 var emitter5;
+var emitter6;
 var timeLimit = 60;
 var timeOver = false;
 var timeText;
@@ -282,8 +290,8 @@ function create()
     downSmashRight = player.animations.add('downsmashright', [20], 3, false);
     downAirLeft = player.animations.add('downairleft', [19], 3, false);
     downAirRight = player.animations.add('downairright', [18], 3, false);
-    dashRight = player.animations.add('dashright', [0, 1, 2, 3, 4], 10, false);
-    dashLeft = player.animations.add('dashleft', [5, 6, 7, 8, 9], 10, false);
+    dashRight = player.animations.add('dashright', [24, 25, 26, 27, 28], 10, false);
+    dashLeft = player.animations.add('dashleft', [29, 30, 31, 32, 33], 10, false);
     downSmashLeft = player.animations.add('downsmashleft', [21], 3, false);
     downSmashRight = player.animations.add('downsmashright', [20], 3, false);
     
@@ -293,19 +301,25 @@ function create()
     
     //sounds
     music = game.add.audio('bgm');
-    music.volume = 0.03;
+    music.volume = 0.02;
     
     punchsound = game.add.audio('punchsound');
     smashsound = game.add.audio('smashsound'); 
+    stompsound = game.add.audio('stompsound'); 
+    downsmashsound = game.add.audio('downsmashsound'); 
+    upairsound = game.add.audio('upairsound'); 
     awwsound = game.add.audio('awwsound');
     KOsound = game.add.audio('KOsound');
     whistlesound = game.add.audio('whistle');
     dodgesound = game.add.audio('dodge')
     
+    
     KOsound.volume = 0.2;
     whistlesound.volume = 0.2;
-    
-    
+    punchsound.volume = 0.5;
+    downsmashsound.volume = 0.5;
+    upairsound.volume = 0.5;
+    smashsound.volume = 0.5;
     
     //hitboxes
     hitboxes = game.add.group();
@@ -379,6 +393,12 @@ function create()
     emitter5.setAlpha(0.3, 0.8);
     emitter5.gravity = 0;
     
+    emitter6 = game.add.emitter(game.world.centerX - 150, 830, 200);
+    emitter6.makeParticles('smoketrail');
+    emitter6.setScale(2, 2);
+    emitter6.setRotation(0, 0);
+    emitter6.gravity = 0;
+    
     // User Interface
     scoreText = game.add.text(16, 16, 'Score: ' + score, { fontSize: '64px', fill: '#ff0000' });
     enemyDamageText = game.add.text(game.world.centerX + 100, 830, enemyDamage + '%', { fontSize: '48px', fill: '#FFFFFF' });
@@ -413,7 +433,9 @@ function update()
     if (keyR.justDown)
     {
         instantRestart = true;
-        restartGame();
+        game.add.text(game.world.centerX, game.world.centerY, 'Restarting...', { fontSize: '50px', fill: '#000000' });
+        game.time.events.add(500, restartGame);
+        
     }
     
     if (keyBackSpace.justDown)
@@ -431,7 +453,7 @@ function update()
     {
         toggleTutorial();
     }
-
+    
 
     //collision
     var hitStage = game.physics.arcade.collide(player, stages);
@@ -537,6 +559,9 @@ function update()
                 isDashing = true;
                 player.animations.play('dashright')
                 dodgesound.play();
+                emitter6.x = player.position.x;
+                emitter6.y = player.position.y + 64;
+                emitter6.start(true, 500, null, 3);
             }
             else if (cursors.left.isDown && keyD.justDown && !isDashing)
             {
@@ -544,6 +569,9 @@ function update()
                 isDashing = true;
                 player.animations.play('dashleft')
                 dodgesound.play();
+                emitter6.x = player.position.x;
+                emitter6.y = player.position.y + 64;
+                emitter6.start(true, 500, null, 3);
             }
             
             //resets jump counter if touching platform or stage
@@ -743,6 +771,7 @@ function update()
 function restartGame ()
 {
     playerHitStun = false;
+    enemyHitStun = false;
     // gameover = true;
     timeOver = false;
     game.time.reset();
@@ -916,9 +945,9 @@ function hitBox2Enemy ()
 
 function hitBox3Enemy ()
 {
-    punchsound.play();
+    upairsound.play();
     particleBurstHit(enemy, emitter2);
-    enemyDamage += 10;
+    //enemyDamage += 10;
     enemyDamageText.text = enemyDamage + '%';
     setDamageColor(enemyDamage, enemyDamageText);
     enemyHitStun = true
@@ -931,9 +960,9 @@ function hitBox3Enemy ()
 
 function hitBox4Enemy ()
 {
-    punchsound.play();
+    downsmashsound.play();
     particleBurstHit(enemy, emitter2);
-    enemyDamage += 10;
+    //enemyDamage += 10;
     enemyDamageText.text = enemyDamage + '%';
     setDamageColor(enemyDamage, enemyDamageText);
     enemyHitStun = true
@@ -946,9 +975,9 @@ function hitBox4Enemy ()
 
 function hitBox5Enemy ()
 {
-    punchsound.play();
+    stompsound.play();
     particleBurstHit(enemy, emitter2);
-    enemyDamage += 10;
+    //enemyDamage += 10;
     enemyDamageText.text = enemyDamage + '%';
     setDamageColor(enemyDamage, enemyDamageText);
     enemyHitStun = true
