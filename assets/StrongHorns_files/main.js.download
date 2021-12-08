@@ -10,7 +10,7 @@ function preload()
     game.load.image('tower', 'assets/utTower2.png');
     game.load.image('football', 'assets/fist.png');
     game.load.image('greenplus', 'assets/greenplus.png');
-    game.load.spritesheet('hookem', 'assets/hookem.png', 64, 64);
+    game.load.spritesheet('hookem', 'assets/hookemRUNJABJUMP.png', 64, 64);
     game.load.spritesheet('olsarge', 'assets/olsarge.png', 64, 64);
     game.load.image('confetti', 'assets/confetti.png');
     game.load.image('star', 'assets/star.png');
@@ -31,7 +31,6 @@ function preload()
     game.load.audio('awwsound', 'assets/aww_sound.mp3')
     game.load.audio('KOsound', 'assets/KOsound.mp3')
     game.load.audio('whistle', 'assets/whistle.mp3')
-    game.load.audio('dodge', 'assets/dodge_sound.mp3')
 }
 
 // defined variables
@@ -42,7 +41,6 @@ var smashsound;
 var awwsound;
 var KOsound;
 var whistlesound;
-var dodgesound;
 var deathscreen;
 var endscreen;
 var tutorialScreen; var tutorialScreen2
@@ -64,27 +62,24 @@ var canScore = true;
 var gameover = true;
 var lastLeft = true;
 var jumpCounter = 0;
-var enemyHitboxes;
-var enemyHitbox;
+var isJumping;
+var canPass;
 var hitboxes;
 var hitbox1;
 var hitbox2;
 var hitbox3;
 var hitbox4;
-var hitbox5;
+var neutralAtt = 0;
 var spacebar;
 var keyR;
 var keyEnter;
 var keyT;
-var keyD;
 var keyBackSpace;
 var enemyJumpCounter;
 var enemyHitStun = false;
 var playerHitStun = false;
 var knockback;
 var isAttacking = false;
-var isDashing = false;
-var isAnimating = false;
 var playerKnockback;
 var enemyDamage = 0;
 var enemyDamageText;
@@ -100,21 +95,11 @@ var timeOver = false;
 var timeText;
 var time;
 var timeLeft;
+var gameOverText;
+var countdownText;
+var leftStoredVelocity = 0;
+var rightStoredVelocity = 0;
 var titleScreen;
-var jumpLeft;
-var jumpRight;
-var jabLeft;
-var jabRight;
-var upAirLeft
-var upAirRight;
-var downSmashLeft;
-var downSmashRight;
-var downAirLeft;
-var downAirRight;
-var dashLeft;
-var dashRight;
-var downSmashRight;
-var downSmashLeft;
 
 
 function create() 
@@ -161,13 +146,13 @@ function create()
     platforms.enableBody = true;
     
     //create left platform
-    var ledge = platforms.create(game.world.centerX - 200, 570, 'platform');
+    var ledge = platforms.create(game.world.centerX - 200, 550, 'platform');
     ledge.body.immovable = true;
     ledge.scale.setTo(1.5, 1.3)
     ledge.anchor.set(0.5);
 
     //create right platform
-    ledge = platforms.create(game.world.centerX + 217, 570, 'platform');
+    ledge = platforms.create(game.world.centerX + 217, 550, 'platform');
     ledge.body.immovable = true;
     ledge.scale.setTo(1.5, 1.3)
     ledge.anchor.set(0.5);
@@ -244,7 +229,6 @@ function create()
     player.body.gravity.y = 2000;
     player.body.collideWorldBounds = false;
     
-    
     //create enemy
     enemy = game.add.sprite(game.world.centerX + 200, game.world.height - 600, 'olsarge');
     enemy.scale.setTo(1.5, 1.5);
@@ -252,40 +236,22 @@ function create()
     enemy.body.gravity.y = 2000;
     enemy.body.collideWorldBounds = false;
     
-    enemyHitboxes = game.add.group();
-    enemyHitboxes.enableBody = true;
-    enemy.addChild(enemyHitboxes);
-    enemyHitbox = enemyHitboxes.create(15, 10, 'ground');
-    enemyHitbox.scale.setTo(.08, 1.4);
-    enemyHitbox.alpha = 0;
-    
     //player keyboard controls
     cursors = game.input.keyboard.createCursorKeys();
     spacebar = game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
     keyR = game.input.keyboard.addKey(Phaser.Keyboard.R);
     keyE = game.input.keyboard.addKey(Phaser.Keyboard.E);
-    keyEnter = game.input.keyboard.addKey(Phaser.Keyboard.ENTER);
-    keyT = game.input.keyboard.addKey(Phaser.Keyboard.T);
-    keyBackSpace = game.input.keyboard.addKey(Phaser.Keyboard.BACKSPACE);
-    keyD = game.input.keyboard.addKey(Phaser.Keyboard.D);
+    keyEnter = game.input.keyboard.addKey(Phaser.Keyboard.ENTER)
+    keyT = game.input.keyboard.addKey(Phaser.Keyboard.T)
+    keyBackSpace = game.input.keyboard.addKey(Phaser.Keyboard.BACKSPACE)
     
     //player animations
     player.animations.add('right', [0, 1, 2, 3, 4], 10, true);
     player.animations.add('left', [5, 6, 7, 8, 9], 10, true);
-    jabLeft = player.animations.add('jableft', [10, 10, 10, 10, 10, 5], 10, false);
-    jabRight = player.animations.add('jabright', [11, 11, 11, 11, 11, 0], 10, false);
-    jumpLeft = player.animations.add('jumpleft', [12, 13, 14], 6, false);
-    jumpRight =  player.animations.add('jumpright', [15, 16, 17], 6, false);
-    upAirLeft = player.animations.add('upairleft', [23], 3, false);
-    upAirRight = player.animations.add('upairright', [22], 3, false);
-    downSmashLeft = player.animations.add('downsmashleft', [21], 3, false);
-    downSmashRight = player.animations.add('downsmashright', [20], 3, false);
-    downAirLeft = player.animations.add('downairleft', [19], 3, false);
-    downAirRight = player.animations.add('downairright', [18], 3, false);
-    dashRight = player.animations.add('dashright', [0, 1, 2, 3, 4], 10, false);
-    dashLeft = player.animations.add('dashleft', [5, 6, 7, 8, 9], 10, false);
-    downSmashLeft = player.animations.add('downsmashleft', [21], 3, false);
-    downSmashRight = player.animations.add('downsmashright', [20], 3, false);
+    player.animations.add('jableft', [10], 10, true);
+    player.animations.add('jabright', [11], 10, true);
+    player.animations.add('jumpleft', [12, 13, 14], 3, true);
+    player.animations.add('jumpright', [15, 16, 17], 3, true);
     
     //enemy animations
     enemy.animations.add('enemyright', [0, 2, 3], 10, true);
@@ -300,7 +266,6 @@ function create()
     awwsound = game.add.audio('awwsound');
     KOsound = game.add.audio('KOsound');
     whistlesound = game.add.audio('whistle');
-    dodgesound = game.add.audio('dodge')
     
     KOsound.volume = 0.2;
     whistlesound.volume = 0.2;
@@ -316,28 +281,23 @@ function create()
     hitbox1 = hitboxes.create(100, 0, 'football');
     hitbox1.scale.setTo(.1, .1)
     hitbox1.name = 'attack1'
-    hitbox1.alpha = 0;
+    hitbox1.alpha = 1;
     
     //left hitbox
     hitbox2 = hitboxes.create(-100, 0, 'football');
     hitbox2.scale.setTo(.1, .1)
     hitbox2.name = 'attack2'
-    hitbox2.alpha = 0;
+    hitbox2.alpha = 1;
     
     hitbox3 = hitboxes.create(0, -100, 'football');
     hitbox3.scale.setTo(.1, .1)
     hitbox3.name = 'attack3'
-    hitbox3.alpha = 0;
+    hitbox3.alpha = 1;
     
     hitbox4 = hitboxes.create(0, 100, 'football');
     hitbox4.scale.setTo(.1, .1)
     hitbox4.name = 'attack4'
-    hitbox4.alpha = 0;
-    
-    hitbox5 = hitboxes.create(0, 100, 'football');
-    hitbox5.scale.setTo(.1, .1)
-    hitbox5.name = 'attack5'
-    hitbox5.alpha = 0;
+    hitbox4.alpha = 1;
     
     disableHitboxes()
     
@@ -456,69 +416,67 @@ function update()
         {
             endGame();
         }
-        
+        /*
+        if (playerHitStun == true)
+        {
+            if (player.body.velocity.x > 0)
+            {
+                player.body.velocity.x = player.body.velocity.x - 10;
+            }
+        }
+        */
         // checks if player is in hitstun
         if (playerHitStun == false)
         {
-            //platform collision
-            if (player.body.velocity.y > -50)
-            {
-                var hitPlatform = game.physics.arcade.collide(player, platforms);
-            }
+            var hitPlatform = game.physics.arcade.collide(player, platforms);
             
-            if (jabRight.isPlaying || jabLeft.isPlaying || jumpLeft.isPlaying || jumpRight.isPlaying || upAirLeft.isPlaying || upAirRight.isPlaying || downSmashLeft.isPlaying || downSmashRight.isPlaying || downAirLeft.isPlaying || downAirRight.isPlaying || dashLeft.isPlaying || dashRight.isPlaying || downSmashLeft.isPlaying || downSmashRight.isPlaying)
+            if (player.body.velocity.y < 0)
             {
-                isAnimating = true;
+                player.animations.play('jumpleft')
             }
-            else
-            {
-                isAnimating = false;
-            }
-            
             
             //if no input, stay still
-            if (player.body.velocity.x < -10)
-            {
-                player.body.velocity.x = player.body.velocity.x + 50;
-            }
-            
-            else if (player.body.velocity.x > 10)
-            {
-                player.body.velocity.x = player.body.velocity.x - 50;
-            }
-            else if (player.body.velocity.x > -450 && player.body.velocity.x < 450)
-            {
-                isDashing = false;
-            }
-            else
-            {
-                player.body.velocity.x = 0;
-            }
+            player.body.velocity.x = 0;
             
             //move left
-            if (cursors.left.isDown && !isDashing)
+            if (cursors.left.isDown)
             {
+                rightStoredVelocity = 200;
                 lastLeft = true;
-                player.body.velocity.x = -450;
-                if (!isAnimating)
-                    player.animations.play('left');
+                if (!player.body.touching.down && leftStoredVelocity > -450)
+                {
+                    leftStoredVelocity = leftStoredVelocity - 10;
+                    player.body.velocity.x = leftStoredVelocity;
+                }
+                else
+                {
+                    player.body.velocity.x = -450
+                }
+                player.animations.play('left');
             }
 
             //move right
-            else if (cursors.right.isDown && !isDashing)
+            else if (cursors.right.isDown)
             {
-                lastLeft = false;              
-                player.body.velocity.x = 450;
-                if (!isAnimating)
+                leftStoredVelocity = -200;
+                lastLeft = false
+                if (!player.body.touching.down && rightStoredVelocity < 450)
                 {
-                    player.animations.play('right');
+                    rightStoredVelocity = rightStoredVelocity + 10;
+                    player.body.velocity.x = rightStoredVelocity;
                 }
+                else
+                {
+                    player.body.velocity.x = 450
+                }
+                
+                player.animations.play('right');
             }
-            
+
             //player faces the direction of last key pressed
-            else if (!isAnimating)
+            else
             {
-                //player.animations.stop();
+                player.animations.stop();
                 if (lastLeft == true)
                 {
                     player.frame = 5;
@@ -529,33 +487,26 @@ function update()
                     player.frame = 0;
                 }
             }
-            
-            //dashes
-            if (cursors.right.isDown && keyD.justDown && !isDashing)
-            {
-                player.body.velocity.x = 1300;
-                isDashing = true;
-                player.animations.play('dashright')
-                dodgesound.play();
-            }
-            else if (cursors.left.isDown && keyD.justDown && !isDashing)
-            {
-                player.body.velocity.x = -1300;
-                isDashing = true;
-                player.animations.play('dashleft')
-                dodgesound.play();
-            }
-            
+
             //resets jump counter if touching platform or stage
             if (player.body.touching.down && (hitPlatform || hitStage))
             {
+                canPass = false;
                 jumpCounter = 2;
+                isJumping = false;
             }
 
             //jumping from platform or stage
-            if (cursors.up.justDown && jumpCounter > 0)
+            if (upInputIsActive(5) && jumpCounter > 0)
             {
                 jump(player);
+                canPass = true;
+                isJumping = true;
+            }
+
+            if (isJumping && upInputReleased()){
+                jumpCounter--;
+                isJumping = false;
             }
 
             //fast falling while in the air
@@ -573,8 +524,9 @@ function update()
             {
                 
                 //right attack
-                if ((spacebar.isDown && cursors.right.isDown) || (spacebar.isDown && !lastLeft))
+                if ((spacebar.isDown && cursors.right.isDown) || (spacebar.isDown && neutralAtt == 1))
                 {
+                    neutralAtt = 1;
                     isAttacking = true;
                     player.animations.play('jabright');
                     enableHitbox('attack1');
@@ -593,53 +545,44 @@ function update()
                 }
 
                 //left attack
-                if ((spacebar.isDown && cursors.left.isDown) || (spacebar.isDown && lastLeft))
+                if ((spacebar.isDown && cursors.left.isDown) || (spacebar.isDown && neutralAtt == 2))
                 {
+                    neutralAtt = 2;
                     isAttacking = true;
                     player.animations.play('jableft');
                     enableHitbox('attack2');
-                    hitboxes.position.x = -70;
+                    hitboxes.position.x = -100;
                     hitboxes.position.y = 0;
                     this.time.events.add(300, disableHitboxes);
 
                 }
 
                 //up attack
-                if (spacebar.isDown && cursors.up.isDown)
+                if ((spacebar.isDown && cursors.up.isDown) || (spacebar.isDown && neutralAtt == 3))
                 {
+                    neutralAtt = 3
                     isAttacking = true;
                     enableHitbox('attack3');
-                    if (lastLeft)
-                    {
-                        player.animations.play('upairleft')
-                        hitboxes.position.y = -50;
-                        hitboxes.position.x = -15;
-                    }
-                    else
-                    {
-                        player.animations.play('upairright')
-                        hitboxes.position.y = -50;
-                        hitboxes.position.x = 20;
-                    }
+                    hitboxes.position.y = -100;
+                    hitboxes.position.x = 0;
                     this.time.events.add(300, disableHitboxes);
 
                 }
 
-                //down smash
-                if (spacebar.isDown && cursors.down.isDown && (hitPlatform || hitStage))
+                //down attack
+                if ((spacebar.isDown && cursors.down.isDown) || (spacebar.isDown && neutralAtt == 4))
                 {
+                    neutralAtt = 4
                     isAttacking = true;
                     enableHitbox('attack4');
 
                     if (lastLeft)
                     {
-                        player.animations.play('downsmashleft')
                         hitboxes.position.y = 50;
-                        hitboxes.position.x = -70;
+                        hitboxes.position.x = -100;
                     }
                     else
                     {
-                        player.animations.play('downsmashright')
                         hitboxes.position.y = 50;
                         hitboxes.position.x = 75;
                     }
@@ -647,45 +590,24 @@ function update()
                     this.time.events.add(300, disableHitboxes);
 
                 }
-                
-                //down air
-                if (spacebar.isDown && cursors.down.isDown && !(hitPlatform || hitStage))
-                {
-                    isAttacking = true;
-                    enableHitbox('attack5');
-                    if (lastLeft)
-                    {
-                        player.animations.play('downairleft')
-                        hitboxes.position.y = 50;
-                        hitboxes.position.x = -15;
-                    }
-                    else
-                    {
-                        player.animations.play('downairright')
-                        hitboxes.position.y = 50;
-                        hitboxes.position.x = 20;
-                    }
-                    
-                    this.time.events.add(300, disableHitboxes);
-
-                }
             }
             
             
             // checks if player is hit by enemy
-            if (!isDashing)
-            {
-                game.physics.arcade.overlap(enemyHitbox, player, hitByEnemy, null);  
-            }
+            game.physics.arcade.overlap(enemy, player, hitByEnemy, null);  
         }
         
+        //jump through platforms.
+        if ((hitPlatform && !(player.body.touching.down) && canPass) || (playerHitStun && (hitPlatform && !(player.body.touching.down))))
+        {
+            player.position.y = player.position.y - 4.1;
+            player.body.velocity.y = -300;
+        }
         
         if (enemyHitStun == false)
         {
-            if (enemy.body.velocity.y > -100)
-            {
-                var hitPlatform1 = game.physics.arcade.collide(enemy, platforms);
-            }
+            var hitPlatform1 = game.physics.arcade.collide(enemy, platforms);
+            
             // Enemy AI
             // see if enemy and player within 400px of each other
             if (game.physics.arcade.distanceBetween(enemy, player) < 600) 
@@ -696,10 +618,12 @@ function update()
                         enemyJumpCounter = 1;
                     }
                     
-                    // falls through platform
-                    if ((hitPlatform1 && enemy.body.touching.down) && player.position.y > enemy.position.y )
+                
+                    // jump through platform
+                    if ((hitPlatform1 && !(player.body.touching.down)) || (enemyHitStun && (hitPlatform1 && !(enemy.body.touching.down))))
                     {
-                        enemy.position.y = enemy.position.y + 5;
+                        enemy.position.y = enemy.position.y - 10;
+                        //enemy.body.velocity.y = -300;
                     }
 
                     // if player to left of enemy AND enemy moving to right (or not moving)
@@ -734,7 +658,7 @@ function update()
             game.physics.arcade.overlap(hitbox2, enemy, hitBox2Enemy, null, this);
             game.physics.arcade.overlap(hitbox3, enemy, hitBox3Enemy, null, this);
             game.physics.arcade.overlap(hitbox4, enemy, hitBox4Enemy, null, this);
-            game.physics.arcade.overlap(hitbox5, enemy, hitBox5Enemy, null, this);
+
         }
     }
 
@@ -814,10 +738,6 @@ function enemyKilled ()
     enemy.body.collideWorldBounds = false;
     enemy.animations.add('enemyright', [0, 2, 3], 10, true);
     enemy.animations.add('enemyleft', [1, 4, 5], 10, true);
-    enemy.addChild(enemyHitboxes);
-    enemyHitbox = enemyHitboxes.create(15, 10, 'ground');
-    enemyHitbox.scale.setTo(.08, 1.4);
-    enemyHitbox.alpha = 0;
     
     score += 1;
     scoreText.text = 'Score: ' + score;
@@ -944,36 +864,20 @@ function hitBox4Enemy ()
     this.time.events.add(400, disableEnemyHitStun);
 }
 
-function hitBox5Enemy ()
-{
-    punchsound.play();
-    particleBurstHit(enemy, emitter2);
-    enemyDamage += 10;
-    enemyDamageText.text = enemyDamage + '%';
-    setDamageColor(enemyDamage, enemyDamageText);
-    enemyHitStun = true
-    
-    //calculates knockback
-    knockback = 1000;
-    enemy.body.velocity.y = knockback;
-    this.time.events.add(400, disableEnemyHitStun);
-}
-
 // jump
 function jump (jumper)
 {
-    jumpCounter--;
-    if (lastLeft)
-    {
-        player.animations.play('jumpleft')
-    }
-    else
-    {
-        player.animations.play('jumpright')
-    }
-    
+    player.animations.play('jumpleft')
     jumper.body.velocity.y = -850;
     
+}
+
+function upInputIsActive(duration) {
+    return game.input.keyboard.downDuration(Phaser.Keyboard.UP, duration);
+}
+
+function upInputReleased() {
+    return game.input.keyboard.upDuration(Phaser.Keyboard.UP);
 }
 
 function disablePlayerHitStun ()
